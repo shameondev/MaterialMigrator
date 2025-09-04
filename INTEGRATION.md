@@ -7,14 +7,14 @@ This guide shows how to integrate MaterialMigrator into your existing React proj
 ### Option 1: Use via npx (Recommended)
 Run directly without installation:
 ```bash
-npx material-migrator migrate --pattern "src/**/*.tsx" --dry-run
+npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
 ```
 
 ### Option 2: Global Installation
 Install globally for repeated use:
 ```bash
-npm install -g material-migrator
-material-migrator migrate --pattern "src/**/*.tsx" --dry-run
+npm install -g mttwm
+mttwm migrate --pattern "src/**/*.tsx" --dry-run
 ```
 
 ### Option 3: Local Development
@@ -27,7 +27,7 @@ npm run build
 npm link
 
 # In your project directory:
-npm link material-migrator
+npm link mttwm
 ```
 
 ## Usage in dash-app
@@ -35,7 +35,7 @@ npm link material-migrator
 ### 1. Test Migration (Dry Run)
 Preview changes without modifying files:
 ```bash
-npx material-migrator migrate \
+npx mttwm migrate \
   --pattern "src/components/**/*.tsx" \
   --pattern "src/views/**/*.tsx" \
   --exclude "**/*.test.tsx" \
@@ -47,26 +47,26 @@ npx material-migrator migrate \
 ### 2. Test Specific Files
 Test on individual files first:
 ```bash
-npx material-migrator test src/components/Modal/index.tsx
+npx mttwm test src/components/Modal/index.tsx
 ```
 
 ### 3. Migrate by Feature
 Migrate incrementally by feature/directory:
 ```bash
 # Migrate components first
-npx material-migrator migrate --pattern "src/components/**/*.tsx" --preserve-original
+npx mttwm migrate --pattern "src/components/**/*.tsx" --preserve-original
 
 # Then views
-npx material-migrator migrate --pattern "src/views/ABTesting/**/*.tsx" --preserve-original
+npx mttwm migrate --pattern "src/views/ABTesting/**/*.tsx" --preserve-original
 
 # Finally specific files
-npx material-migrator migrate --pattern "src/views/Products/CreateEditCopyProduct/index.tsx"
+npx mttwm migrate --pattern "src/views/Products/CreateEditCopyProduct/index.tsx"
 ```
 
 ### 4. Generate Migration Report
 Get detailed statistics and recommendations:
 ```bash
-npx material-migrator migrate \
+npx mttwm migrate \
   --pattern "src/**/*.tsx" \
   --generate-report \
   --dry-run
@@ -80,7 +80,7 @@ This creates `migration-report.json` with:
 ### 5. Full Production Migration
 After testing, run full migration:
 ```bash
-npx material-migrator migrate \
+npx mttwm migrate \
   --pattern "src/**/*.{ts,tsx}" \
   --exclude "node_modules/**" \
   --exclude "dist/**" \
@@ -95,20 +95,20 @@ npx material-migrator migrate \
 
 1. **Phase 1: Components**
    ```bash
-   npx material-migrator migrate --pattern "src/components/**/*.tsx" --preserve-original
+   npx mttwm migrate --pattern "src/components/**/*.tsx" --preserve-original
    ```
 
 2. **Phase 2: Views by Feature**
    ```bash
-   npx material-migrator migrate --pattern "src/views/ABTesting/**/*.tsx" --preserve-original
-   npx material-migrator migrate --pattern "src/views/Entitlements/**/*.tsx" --preserve-original
-   npx material-migrator migrate --pattern "src/views/Monitoring/**/*.tsx" --preserve-original
+   npx mttwm migrate --pattern "src/views/ABTesting/**/*.tsx" --preserve-original
+   npx mttwm migrate --pattern "src/views/Entitlements/**/*.tsx" --preserve-original
+   npx mttwm migrate --pattern "src/views/Monitoring/**/*.tsx" --preserve-original
    # ... continue for each view directory
    ```
 
 3. **Phase 3: Remaining Files**
    ```bash
-   npx material-migrator migrate --pattern "src/**/*.tsx" --exclude "src/components/**" --exclude "src/views/**"
+   npx mttwm migrate --pattern "src/**/*.tsx" --exclude "src/components/**" --exclude "src/views/**"
    ```
 
 ### Custom Theme Mapping (if needed)
@@ -182,10 +182,10 @@ After running MaterialMigrator:
 
 ```bash
 # 1. Test the Modal component
-npx material-migrator test src/components/Modal/index.tsx
+npx mttwm test src/components/Modal/index.tsx
 
 # 2. Run migration with backup
-npx material-migrator migrate --pattern "src/components/Modal/index.tsx" --preserve-original
+npx mttwm migrate --pattern "src/components/Modal/index.tsx" --preserve-original
 
 # 3. Verify the results
 git diff src/components/Modal/index.tsx

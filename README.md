@@ -21,14 +21,14 @@ Transform your React applications from Material-UI `makeStyles`/`useStyles` to T
 #### Quick Start (Recommended)
 ```bash
 # Use directly without installation
-npx material-migrator migrate --pattern "src/**/*.tsx" --dry-run
+npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
 ```
 
 #### Global Installation
 ```bash
 # Install globally for repeated use
-npm install -g material-migrator
-material-migrator migrate --pattern "src/**/*.tsx" --dry-run
+npm install -g mttwm
+mttwm migrate --pattern "src/**/*.tsx" --dry-run
 ```
 
 #### Development Setup
@@ -43,23 +43,23 @@ npm run build
 npm link
 
 # In your project directory:
-npm link material-migrator
+npm link mttwm
 ```
 
 ### Usage
 
 ```bash
 # Test migration on specific files
-material-migrator test path/to/component.tsx
+mttwm test path/to/component.tsx
 
 # Migrate files (dry run first)
-material-migrator migrate --pattern "src/**/*.tsx" --dry-run
+mttwm migrate --pattern "src/**/*.tsx" --dry-run
 
 # Apply migration
-material-migrator migrate --pattern "src/**/*.tsx"
+mttwm migrate --pattern "src/**/*.tsx"
 
 # Generate detailed report
-material-migrator migrate --pattern "src/**/*.tsx" --generate-report
+mttwm migrate --pattern "src/**/*.tsx" --generate-report
 ```
 
 📋 **For detailed integration instructions, see [INTEGRATION.md](./INTEGRATION.md)**

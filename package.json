@@ -1,10 +1,10 @@
 {
-  "name": "material-migrator",
+  "name": "mttwm",
   "version": "1.0.0",
   "description": "Automated CSS-in-JS to Tailwind CSS migration tool for React applications",
   "main": "dist/migrate.js",
   "bin": {
-    "material-migrator": "dist/migrate.js"
+    "mttwm": "dist/migrate.js"
   },
   "type": "module",
   "scripts": {

@@ -307,8 +307,8 @@ export class MigrationTool {
 
 // CLI Setup
 program
-  .name('migrate-to-tailwind')
-  .description('Migrate CSS-in-JS (makeStyles) to Tailwind CSS')
+  .name('mttwm')
+  .description('MTTWM - Material To Tailwind Migrator: Migrate CSS-in-JS (makeStyles) to Tailwind CSS')
   .version('1.0.0');
 
 program
