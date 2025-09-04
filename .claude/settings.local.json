@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__serena__onboarding",
+      "mcp__serena__list_dir",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__find_file",
+      "mcp__serena__search_for_pattern",
+      "mcp__serena__write_memory",
+      "mcp__serena__think_about_whether_you_are_done",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(npm run test:migration:*)",
+      "Bash(tsx:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "mcp__serena__find_symbol",
+      "Bash(npm run build:*)",
+      "Bash(npm run test:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

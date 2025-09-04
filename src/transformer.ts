@@ -15,7 +15,8 @@ import type {
   MigrationResult,
   TailwindConversion,
   MigrationError,
-  ConversionWarning
+  ConversionWarning,
+  StyleImport
 } from './types.js';
 
 export class CodeTransformer {
@@ -144,6 +145,116 @@ export class CodeTransformer {
   }
 
   /**
+   * Transform the code with support for imported styles
+   */
+  public transformWithImports(
+    extractions: MakeStylesExtraction[],
+    conversions: Map<string, TailwindConversion>,
+    importedStyles: StyleImport[]
+  ): MigrationResult {
+    const errors: MigrationError[] = [];
+    const warnings: ConversionWarning[] = [];
+    const classNameReplacements = new Map<string, string>();
+    const removedImports: string[] = [];
+
+    try {
+      // Separate local and imported extractions
+      const localExtractions = extractions.filter(ext => 
+        !importedStyles.some(imp => imp.hookName === ext.hookName)
+      );
+      const importedExtractions = extractions.filter(ext => 
+        importedStyles.some(imp => imp.hookName === ext.hookName)
+      );
+
+      // Determine which extractions can be fully migrated
+      const fullyMigratableLocalExtractions = this.getFullyMigratableExtractions(localExtractions, conversions);
+      const fullyMigratableImportedExtractions = this.getFullyMigratableExtractions(importedExtractions, conversions);
+      
+      // Replace className usages with Tailwind classes
+      this.replaceClassNameUsages([...fullyMigratableLocalExtractions, ...fullyMigratableImportedExtractions], conversions, classNameReplacements);
+
+      // Remove local makeStyles calls and hooks
+      if (fullyMigratableLocalExtractions.length > 0) {
+        this.removeMakeStylesCalls(fullyMigratableLocalExtractions, removedImports);
+        this.updateImports(fullyMigratableLocalExtractions, removedImports);
+      }
+
+      // Remove imported style hooks that are no longer needed
+      if (fullyMigratableImportedExtractions.length > 0) {
+        this.removeImportedStyleUsages(fullyMigratableImportedExtractions, importedStyles, removedImports);
+      }
+
+      // Add cn() utility for dynamic classes if needed
+      this.addClsxImportIfNeeded(classNameReplacements);
+
+      // Generate the transformed code
+      const migratedCode = generateFn(this.ast, {
+        retainLines: false,
+        compact: false,
+        concise: false,
+      }).code;
+
+      // Collect warnings from conversions
+      for (const conversion of conversions.values()) {
+        warnings.push(...conversion.warnings);
+      }
+
+      // Calculate statistics
+      const totalStyles = Array.from(conversions.values()).reduce(
+        (sum, conv) => sum + Object.keys(conv.original).length,
+        0
+      );
+      const convertedStyles = Array.from(conversions.values()).reduce(
+        (sum, conv) => sum + conv.tailwindClasses.length,
+        0
+      );
+      const unconvertibleStyles = Array.from(conversions.values()).reduce(
+        (sum, conv) => sum + conv.unconvertible.length,
+        0
+      );
+
+      return {
+        originalFile: this.sourceCode,
+        migratedCode,
+        conversions: Array.from(conversions.values()),
+        classNameReplacements,
+        removedImports,
+        errors,
+        warnings,
+        stats: {
+          totalStyles,
+          convertedStyles,
+          unconvertibleStyles,
+          classNameReplacements: classNameReplacements.size,
+        }
+      };
+
+    } catch (error) {
+      errors.push({
+        type: 'error',
+        message: `Transformation failed: ${error}`,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      return {
+        originalFile: this.sourceCode,
+        migratedCode: this.sourceCode, // Return original on error
+        conversions: [],
+        classNameReplacements,
+        removedImports,
+        errors,
+        warnings,
+        stats: {
+          totalStyles: 0,
+          convertedStyles: 0,
+          unconvertibleStyles: 0,
+          classNameReplacements: 0,
+        }
+      };
+    }
+  }
+
+  /**
    * Determine which extractions can be fully migrated (all styles have successful conversions)
    */
   private getFullyMigratableExtractions(
@@ -170,8 +281,12 @@ export class CodeTransformer {
     conversions: Map<string, TailwindConversion>,
     classNameReplacements: Map<string, string>
   ): void {
+    // First, build a map of hook names to their actual variable names
+    const hookToVariableMap = this.buildHookToVariableMap(extractions);
+
     for (const extraction of extractions) {
-      const classesVarName = this.getClassesVariableName(extraction.hookName);
+      const classesVarName = hookToVariableMap.get(extraction.hookName) || 
+                            this.getClassesVariableName(extraction.hookName);
 
       traverseFn(this.ast, {
         JSXAttribute: (path: NodePath<t.JSXAttribute>) => {
@@ -553,6 +668,117 @@ export class CodeTransformer {
         this.ast.program.body.splice(lastImportIndex + 1, 0, cnImport);
       }
     }
+  }
+
+  /**
+   * Build a map of hook names to their actual variable names by analyzing the AST
+   */
+  private buildHookToVariableMap(extractions: MakeStylesExtraction[]): Map<string, string> {
+    const hookNames = new Set(extractions.map(e => e.hookName));
+    const hookToVariableMap = new Map<string, string>();
+
+    traverseFn(this.ast, {
+      VariableDeclarator: (path: NodePath<t.VariableDeclarator>) => {
+        const { node } = path;
+        
+        // Check if this is a variable assignment from a hook call
+        if (
+          t.isIdentifier(node.id) &&
+          t.isCallExpression(node.init) &&
+          t.isIdentifier(node.init.callee) &&
+          hookNames.has(node.init.callee.name)
+        ) {
+          // Map the hook name to the variable name
+          hookToVariableMap.set(node.init.callee.name, node.id.name);
+        }
+      }
+    });
+
+    return hookToVariableMap;
+  }
+
+  /**
+   * Remove imported style hook usages that have been successfully migrated
+   */
+  private removeImportedStyleUsages(
+    migratedExtractions: MakeStylesExtraction[],
+    importedStyles: StyleImport[],
+    removedImports: string[]
+  ): void {
+    const migratedHookNames = new Set(migratedExtractions.map(e => e.hookName));
+    const migratedImports = importedStyles.filter(imp => migratedHookNames.has(imp.hookName));
+
+    traverseFn(this.ast, {
+      // Remove hook calls: const classes = useStyles(props);
+      CallExpression: (path: NodePath<t.CallExpression>) => {
+        const { node } = path;
+        
+        if (
+          t.isIdentifier(node.callee) &&
+          migratedHookNames.has(node.callee.name)
+        ) {
+          // Check if this CallExpression is the init value of a VariableDeclarator
+          const parent = path.parentPath;
+          if (parent && parent.isVariableDeclarator() && parent.node.init === node) {
+            const grandParent = parent.parentPath;
+            if (
+              grandParent &&
+              t.isVariableDeclaration(grandParent.node) &&
+              grandParent.node.declarations.length === 1
+            ) {
+              grandParent.remove();
+            } else {
+              parent.remove();
+            }
+          }
+        }
+      },
+
+      // Update import declarations
+      ImportDeclaration: (path: NodePath<t.ImportDeclaration>) => {
+        const { node } = path;
+        
+        if (!t.isStringLiteral(node.source)) return;
+
+        const importPath = node.source.value;
+        const migratedFromThisFile = migratedImports.filter(imp => 
+          imp.importPath === importPath || imp.resolvedPath.endsWith(importPath.replace('./', ''))
+        );
+
+        if (migratedFromThisFile.length === 0) return;
+
+        // Filter out migrated style imports
+        const newSpecifiers = node.specifiers.filter(spec => {
+          if (t.isImportDefaultSpecifier(spec)) {
+            const isStyleImport = migratedFromThisFile.some(imp => 
+              imp.importedName === 'default' && imp.hookName === spec.local.name
+            );
+            if (isStyleImport) {
+              removedImports.push(`${spec.local.name} (default from ${importPath})`);
+              return false;
+            }
+          } else if (t.isImportSpecifier(spec)) {
+            const importedName = t.isIdentifier(spec.imported) ? spec.imported.name : spec.local.name;
+            const isStyleImport = migratedFromThisFile.some(imp => 
+              imp.importedName === importedName
+            );
+            if (isStyleImport) {
+              removedImports.push(`${importedName} from ${importPath}`);
+              return false;
+            }
+          }
+          return true;
+        });
+
+        if (newSpecifiers.length === 0) {
+          // Remove entire import if no specifiers left
+          path.remove();
+        } else {
+          // Update import with remaining specifiers
+          node.specifiers = newSpecifiers;
+        }
+      }
+    });
   }
 
   private getClassesVariableName(hookName: string): string {

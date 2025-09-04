@@ -8,11 +8,13 @@ import chalk from 'chalk';
 import { ASTParser } from './parser.js';
 import { StyleConverter } from './converter.js';
 import { CodeTransformer } from './transformer.js';
-import type { MigrationConfig, MigrationResult, TailwindConversion } from './types.js';
+import { ImportResolver } from './import-resolver.js';
+import type { MigrationConfig, MigrationResult, TailwindConversion, StyleImport, MakeStylesExtraction } from './types.js';
 
 export class MigrationTool {
   private config: MigrationConfig;
   private converter: StyleConverter;
+  private importResolver: ImportResolver;
 
   constructor(config: MigrationConfig) {
     this.config = config;
@@ -20,6 +22,7 @@ export class MigrationTool {
       config.customThemeMapping,
       // Custom breakpoints can be added here
     );
+    this.importResolver = new ImportResolver();
   }
 
   /**
@@ -106,12 +109,20 @@ export class MigrationTool {
     // Read the source file
     const sourceCode = await readFile(filePath, 'utf-8');
     
-    // Parse and extract styles
-    const parser = new ASTParser(sourceCode);
-    const extractions = parser.extractMakeStylesCalls();
+    // Resolve style imports from separate files
+    const { localStyles, importedStyles } = this.importResolver.resolveStyleImports(sourceCode, filePath);
+    
+    // Resolve imported styles to their actual definitions
+    const resolvedImports = this.importResolver.resolveImportedStyles(importedStyles);
 
-    if (extractions.length === 0) {
-      // No makeStyles found, return early
+    // Combine local and imported styles
+    const allExtractions: MakeStylesExtraction[] = [
+      ...localStyles,
+      ...Array.from(resolvedImports.values())
+    ];
+
+    if (allExtractions.length === 0 && importedStyles.length === 0) {
+      // No makeStyles found anywhere, return early
       return {
         originalFile: filePath,
         migratedCode: sourceCode,
@@ -131,17 +142,41 @@ export class MigrationTool {
 
     // Convert styles to Tailwind
     const conversions = new Map<string, TailwindConversion>();
+    const warnings: any[] = [];
+    const errors: any[] = [];
     
-    for (const extraction of extractions) {
+    for (const extraction of allExtractions) {
       for (const style of extraction.styles) {
-        const conversion = this.converter.convertStyles(style.properties);
-        conversions.set(`${extraction.hookName}.${style.name}`, conversion);
+        try {
+          const conversion = this.converter.convertStyles(style.properties);
+          conversions.set(`${extraction.hookName}.${style.name}`, conversion);
+          
+          // Collect warnings
+          warnings.push(...conversion.warnings);
+        } catch (error) {
+          errors.push({
+            type: 'error',
+            message: `Failed to convert style ${extraction.hookName}.${style.name}: ${error}`,
+            location: style.sourceLocation ? {
+              line: style.sourceLocation.line,
+              column: style.sourceLocation.column,
+            } : undefined,
+          });
+        }
       }
     }
 
-    // Transform the code
+    // Transform the code with both local and imported styles
     const transformer = new CodeTransformer(sourceCode);
-    const result = transformer.transform(extractions, conversions);
+    const result = transformer.transformWithImports(
+      allExtractions, 
+      conversions, 
+      importedStyles
+    );
+
+    // Add any import-related warnings/errors
+    result.errors.push(...errors);
+    result.warnings.push(...warnings);
 
     // Write the transformed code if not in dry-run mode
     if (!this.config.dryRun) {

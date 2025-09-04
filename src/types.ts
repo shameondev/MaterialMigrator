@@ -171,3 +171,25 @@ export interface MakeStylesCall extends CallExpression {
     name: 'makeStyles';
   };
 }
+
+// Cross-file import types
+export interface StyleImport {
+  hookName: string;
+  importPath: string;
+  resolvedPath: string;
+  sourceFile: string;
+  importedName: string;
+}
+
+export interface FileStyleMapping {
+  files: Map<string, MakeStylesExtraction[]>;
+  imports: Map<string, StyleImport[]>;
+  exports: Map<string, MakeStylesExtraction[]>;
+}
+
+export interface CrossFileTransformOptions {
+  resolveImports?: boolean;
+  styleFilePattern?: string;
+  preserveImports?: boolean;
+  updateImportPaths?: boolean;
+}
