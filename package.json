@@ -2,7 +2,10 @@
   "name": "material-migrator",
   "version": "1.0.0",
   "description": "Automated CSS-in-JS to Tailwind CSS migration tool for React applications",
-  "main": "migrate.js",
+  "main": "dist/migrate.js",
+  "bin": {
+    "material-migrator": "dist/migrate.js"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc",

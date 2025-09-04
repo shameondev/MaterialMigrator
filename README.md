@@ -18,32 +18,51 @@ Transform your React applications from Material-UI `makeStyles`/`useStyles` to T
 
 ### Installation
 
+#### Quick Start (Recommended)
+```bash
+# Use directly without installation
+npx material-migrator migrate --pattern "src/**/*.tsx" --dry-run
+```
+
+#### Global Installation
+```bash
+# Install globally for repeated use
+npm install -g material-migrator
+material-migrator migrate --pattern "src/**/*.tsx" --dry-run
+```
+
+#### Development Setup
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/MaterialMigrator.git
+git clone https://github.com/shameondev/MaterialMigrator.git
 cd MaterialMigrator
 
-# Install dependencies
+# Install dependencies and build
 npm install
-# or
-pnpm install
+npm run build
+npm link
+
+# In your project directory:
+npm link material-migrator
 ```
 
 ### Usage
 
 ```bash
 # Test migration on specific files
-npm run dev test path/to/component.tsx
+material-migrator test path/to/component.tsx
 
 # Migrate files (dry run first)
-npm run dev migrate --pattern "src/**/*.tsx" --dry-run
+material-migrator migrate --pattern "src/**/*.tsx" --dry-run
 
 # Apply migration
-npm run dev migrate --pattern "src/**/*.tsx"
+material-migrator migrate --pattern "src/**/*.tsx"
 
 # Generate detailed report
-npm run dev migrate --pattern "src/**/*.tsx" --generate-report
+material-migrator migrate --pattern "src/**/*.tsx" --generate-report
 ```
+
+📋 **For detailed integration instructions, see [INTEGRATION.md](./INTEGRATION.md)**
 
 ## 📖 Documentation
 
