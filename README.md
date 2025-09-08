@@ -1,5 +1,10 @@
 # MaterialMigrator
 
+[![npm version](https://badge.fury.io/js/mttwm.svg)](https://badge.fury.io/js/mttwm)
+[![npm downloads](https://img.shields.io/npm/dm/mttwm.svg)](https://www.npmjs.com/package/mttwm)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-orange.svg)](CHANGELOG.md)
+
 🚀 **Automated CSS-in-JS to Tailwind CSS Migration Tool**
 
 Transform your React applications from Material-UI `makeStyles`/`useStyles` to Tailwind CSS automatically. Built for large-scale migrations with intelligent handling of complex scenarios.
@@ -63,6 +68,12 @@ mttwm migrate --pattern "src/**/*.tsx" --generate-report
 ```
 
 📋 **For detailed integration instructions, see [INTEGRATION.md](./INTEGRATION.md)**
+
+## 📦 Package Information
+
+- **📊 npm package**: [mttwm](https://www.npmjs.com/package/mttwm) - Install with `npm install -g mttwm`
+- **📋 Changelog**: [CHANGELOG.md](./CHANGELOG.md) - See all release notes and version history
+- **🏷️ Releases**: [GitHub Releases](https://github.com/shameondev/MaterialMigrator/releases) - Download specific versions
 
 ## 📖 Documentation
 
