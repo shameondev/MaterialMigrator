@@ -30,17 +30,17 @@ const useStyles = makeStyles(theme => ({
 export const RTLDirectionComponent: React.FC = () => {
   const classes = useStyles();
   return <div dir="ltr">
-      <div className="ml-[{CallExpression}px] mr-[{CallExpression}px] pl-6 pr-3 bg-[#f0f0f0]">
+      <div className="ml-4 mr-2 pl-6 pr-3 bg-[#f0f0f0]">
         <p className={cn(classes.textContent, "text-left text-base")}>
           This content should adapt to RTL layouts
         </p>
       </div>
       
-      <div className={cn(classes.cardWithBorder, "p-[{CallExpression}px]")}>
+      <div className={cn(classes.cardWithBorder, "p-6")}>
         Border handling with RTL awareness
       </div>
       
-      <div className={cn(classes.gridContainer, "grid grid-cols-[1fr 200px] gap-[{CallExpression}px]")}>
+      <div className={cn(classes.gridContainer, "grid grid-cols-[1fr 200px] gap-4")}>
         <div>Grid item 1</div>
         <div>Grid item 2</div>
       </div>

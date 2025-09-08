@@ -21,7 +21,7 @@ export const VendorPrefixComponent: React.FC = () => {
         This is a long text that should be clamped to 3 lines with webkit line clamp
       </div>
       
-      <div className="[-webkit-overflow-scrolling:touch] overflow-x-auto overflow-y-hidden p-[{CallExpression}px]">
+      <div className="[-webkit-overflow-scrolling:touch] overflow-x-auto overflow-y-hidden p-2">
         <div>Horizontally scrollable content</div>
       </div>
       

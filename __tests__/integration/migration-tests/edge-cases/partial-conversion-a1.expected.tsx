@@ -17,7 +17,7 @@ const useStyles = makeStyles(theme => ({
 }));
 export const PartialConversionComponent: React.FC = () => {
   const classes = useStyles();
-  return <div className={cn(classes.container, "flex flex-col p-[{CallExpression}px] m-4")}>
+  return <div className={cn(classes.container, "flex flex-col p-4 m-4")}>
       <Card className="bg-[#f5f5f5] rounded-lg var(--theme-shadows)">
         <h2>Partial Conversion Test</h2>
         <p>This component tests 50% convertible properties scenario</p>
