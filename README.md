@@ -54,13 +54,16 @@ npm link mttwm
 ### Usage
 
 ```bash
-# Test migration on specific files
-mttwm test path/to/component.tsx
+# Test migration on specific files (dry run)
+mttwm migrate path/to/component.tsx --dry-run
 
-# Migrate files (dry run first)
+# Test migration with patterns (dry run)
 mttwm migrate --pattern "src/**/*.tsx" --dry-run
 
-# Apply migration
+# Apply migration to specific files
+mttwm migrate path/to/component.tsx
+
+# Apply migration with patterns
 mttwm migrate --pattern "src/**/*.tsx"
 
 # Generate detailed report
@@ -79,31 +82,27 @@ mttwm migrate --pattern "src/**/*.tsx" --generate-report
 
 ### CLI Commands
 
-#### Test Command
-Preview conversion on specific test files without modifying them:
-
-```bash
-npm run dev test test-files/1-simple-styles.test.tsx
-```
-
 #### Migrate Command
-Run full migration with various options:
+The single command for all migration operations:
 
 ```bash
-# Basic migration with dry run
-npm run dev migrate --dry-run
+# Preview migration (dry run) - specific files
+mttwm migrate src/component.tsx --dry-run
 
-# Target specific patterns
-npm run dev migrate --pattern "src/components/**/*.tsx" --pattern "src/views/**/*.tsx"
+# Preview migration (dry run) - using patterns
+mttwm migrate --pattern "src/**/*.tsx" --dry-run
 
-# Exclude patterns  
-npm run dev migrate --exclude "**/*.test.tsx" --exclude "**/stories/**"
+# Apply migration - specific files  
+mttwm migrate src/component.tsx
 
-# Preserve original files
-npm run dev migrate --preserve-original
+# Apply migration - using patterns with options
+mttwm migrate --pattern "src/components/**/*.tsx" --pattern "src/views/**/*.tsx"
+
+# Exclude patterns and preserve originals
+mttwm migrate --pattern "src/**/*.tsx" --exclude "**/*.test.tsx" --preserve-original
 
 # Generate detailed report
-npm run dev migrate --generate-report --verbose
+mttwm migrate --pattern "src/**/*.tsx" --generate-report --verbose
 ```
 
 ### What Gets Migrated
@@ -191,7 +190,7 @@ const config: MigrationConfig = {
 Generate detailed JSON reports with:
 
 ```bash
-npm run dev migrate --generate-report
+mttwm migrate --pattern "src/**/*.tsx" --generate-report
 ```
 
 The report includes:

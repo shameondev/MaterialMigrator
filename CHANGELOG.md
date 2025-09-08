@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-09-08
+
+### BREAKING CHANGES
+- Removed `test` command in favor of simplified `migrate --dry-run` approach
+- All testing functionality now uses `mttwm migrate [files...] --dry-run`
+
+### Changed  
+- Simplified CLI interface with single `migrate` command for all operations
+- Improved user experience with more intuitive command structure
+- Updated documentation to reflect streamlined CLI design
+
+### Fixed
+- Resolved CLI execution issues with ES modules
+- Fixed version display to match package.json version
+
+## [1.3.1] - 2025-09-08
+
+### Fixed
+- Fixed CLI not executing due to ES module issues
+- Updated CLI version to match package.json
+- Improved CLI to accept direct file paths as arguments
+- Enhanced error handling and user feedback
+
 ## [1.3.0] - 2025-09-08
 
 ### Added
