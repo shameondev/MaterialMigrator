@@ -20,7 +20,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
