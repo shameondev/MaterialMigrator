@@ -188,23 +188,42 @@ export class MigrationTestRunner {
   }
 
   /**
-   * Generate a simple diff between actual and expected
+   * Generate a comprehensive diff between actual and expected
    */
   private generateDiff(actual: string, expected: string): string[] {
-    const actualLines = actual.split('\n').map(line => line.trim()).filter(line => line);
-    const expectedLines = expected.split('\n').map(line => line.trim()).filter(line => line);
+    const actualLines = actual.split('\n');
+    const expectedLines = expected.split('\n');
     
     const diff: string[] = [];
     const maxLines = Math.max(actualLines.length, expectedLines.length);
 
+    let diffCount = 0;
     for (let i = 0; i < maxLines; i++) {
       const actualLine = actualLines[i] || '';
       const expectedLine = expectedLines[i] || '';
       
-      if (actualLine !== expectedLine) {
-        diff.push(`Line ${i + 1}:`);
-        diff.push(`- Expected: ${expectedLine}`);
-        diff.push(`+ Actual:   ${actualLine}`);
+      if (actualLine.trim() !== expectedLine.trim()) {
+        diffCount++;
+        if (diffCount === 1) {
+          diff.push('📝 Code Differences:');
+        }
+        
+        diff.push(`\n🔍 Line ${i + 1}:`);
+        diff.push(`❌ Expected: ${expectedLine}`);
+        diff.push(`✅ Actual:   ${actualLine}`);
+        
+        // Show context (2 lines before and after)
+        const context: string[] = [];
+        for (let j = Math.max(0, i - 2); j <= Math.min(maxLines - 1, i + 2); j++) {
+          if (j !== i) {
+            const contextLine = j < actualLines.length ? actualLines[j] : (expectedLines[j] || '');
+            context.push(`   ${j + 1}: ${contextLine}`);
+          }
+        }
+        if (context.length > 0) {
+          diff.push(`📋 Context:`);
+          diff.push(...context);
+        }
       }
     }
 
@@ -212,7 +231,68 @@ export class MigrationTestRunner {
   }
 
   /**
-   * Print test summary
+   * Generate detailed failure report with actionable guidance
+   */
+  private generateDetailedFailureReport(results: TestResult[]): string[] {
+    const failedTests = results.filter(r => !r.passed);
+    if (failedTests.length === 0) return [];
+
+    const report: string[] = [];
+    
+    report.push('\n🚨 DETAILED FAILURE REPORT');
+    report.push('=' .repeat(50));
+    
+    failedTests.forEach((result, index) => {
+      report.push(`\n${index + 1}. ❌ ${result.name}`);
+      report.push('-'.repeat(30));
+      
+      if (result.errors.length > 0) {
+        report.push('🔥 Errors:');
+        result.errors.forEach(error => report.push(`   ${error}`));
+        report.push('');
+      }
+      
+      if (result.diff && result.diff.length > 0) {
+        report.push(...result.diff);
+      }
+      
+      // Show file paths for easy fixing
+      report.push('\n📁 Files to check:');
+      const testCaseFile = this.testCases.find(tc => tc.name === result.name);
+      if (testCaseFile) {
+        report.push(`   Input:    ${testCaseFile.inputFile}`);
+        report.push(`   Expected: ${testCaseFile.expectedFile}`);
+      }
+      
+      // Show actual vs expected code side by side
+      if (result.actual && result.expected) {
+        report.push('\n📄 Full Code Comparison:');
+        report.push('EXPECTED OUTPUT:');
+        report.push('```tsx');
+        report.push(result.expected);
+        report.push('```');
+        report.push('\nACTUAL OUTPUT:');
+        report.push('```tsx');
+        report.push(result.actual);
+        report.push('```');
+      }
+      
+      report.push('\n💡 How to fix:');
+      report.push(`   1. Review the differences above`);
+      report.push(`   2. Update the expected file: ${testCaseFile?.expectedFile || 'N/A'}`);
+      report.push(`   3. Or fix the migration logic if the actual output is wrong`);
+      report.push(`   4. Re-run: npm run test:integration`);
+      
+      if (index < failedTests.length - 1) {
+        report.push('\n' + '='.repeat(50));
+      }
+    });
+    
+    return report;
+  }
+
+  /**
+   * Print comprehensive test summary with detailed failure information
    */
   printSummary(results: TestResult[]): void {
     const passed = results.filter(r => r.passed).length;
@@ -224,10 +304,29 @@ export class MigrationTestRunner {
     console.log(`📋 Total:  ${results.length}`);
     
     if (failed > 0) {
+      // Show basic failed test list
       console.log(`\n🔍 Failed tests:`);
       results.filter(r => !r.passed).forEach(r => {
         console.log(`   • ${r.name}`);
       });
+      
+      // Show detailed failure report
+      const detailedReport = this.generateDetailedFailureReport(results);
+      detailedReport.forEach(line => console.log(line));
+      
+      // Show actionable summary
+      console.log('\n🎯 QUICK FIX SUMMARY');
+      console.log('='.repeat(30));
+      console.log('To fix failing tests:');
+      console.log('1. Check the detailed differences above');
+      console.log('2. Update .expected.tsx files with correct output, OR');
+      console.log('3. Fix migration logic if actual output is wrong');
+      console.log('4. Re-run: npm run test:integration');
+      console.log('');
+      console.log('💡 Tip: If actual output looks correct, update expected files');
+      console.log('💡 Tip: If actual output looks wrong, debug migration logic');
+    } else {
+      console.log('\n🎉 All migration tests passed!');
     }
   }
 }
@@ -260,24 +359,24 @@ export function createMigrationTests(testDir: string = '__tests__/integration/mi
       // Run all tests
       const results = await runner.runAllTests();
       
+      // Always print comprehensive summary (including failures if any)
+      runner.printSummary(results);
+      
       // Check for failures
       const failedTests = results.filter(r => !r.passed);
       
       if (failedTests.length > 0) {
-        console.log(`\nFailed migrations:`);
-        failedTests.forEach(result => {
-          console.log(`❌ ${result.name}`);
-          if (result.errors.length > 0) {
-            result.errors.forEach(error => console.log(`  Error: ${error}`));
-          }
-          if (result.diff && result.diff.length > 0) {
-            console.log(`  Differences:`);
-            result.diff.forEach(line => console.log(`  ${line}`));
-          }
-        });
+        // Additional Jest-specific failure info
+        console.log(`\n🚨 JEST TEST FAILURE - ${failedTests.length} migration test(s) failed`);
+        console.log('See detailed failure report above for specific issues.');
+        
+        // Create a descriptive error message for Jest
+        const failureMessage = failedTests
+          .map(test => `❌ ${test.name}: Migration output doesn't match expected`)
+          .join('\n');
+        
+        throw new Error(`Migration tests failed:\n${failureMessage}\n\nSee console output above for detailed failure analysis.`);
       }
-
-      expect(failedTests.length).toBe(0);
     });
   });
 }
