@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile } from 'fs/promises';
-import { resolve, basename } from 'path';
 import { glob } from 'glob';
 import { program } from 'commander';
 import chalk from 'chalk';
@@ -12,11 +10,12 @@ import type { MigrationConfig } from './types.js';
 program
   .name('mttwm')
   .description('MTTWM - Material To Tailwind Migrator: Migrate CSS-in-JS (makeStyles) to Tailwind CSS')
-  .version('1.1.0');
+  .version('1.3.1');
 
 program
   .command('migrate')
   .description('Migrate files from CSS-in-JS to Tailwind')
+  .argument('[files...]', 'Specific files to migrate (optional)')
   .option('-p, --pattern <patterns...>', 'File patterns to include', ['**/*.{ts,tsx}'])
   .option('-e, --exclude <patterns...>', 'File patterns to exclude', ['node_modules/**', 'dist/**'])
   .option('-d, --dry-run', 'Preview changes without modifying files', false)
@@ -24,7 +23,7 @@ program
   .option('--preserve-original', 'Create backup files', false)
   .option('--use-clsx', 'Use clsx for conditional classes', true)
   .option('--generate-report', 'Generate detailed migration report', false)
-  .action(async (options) => {
+  .action(async (files, options) => {
     const config: MigrationConfig = {
       projectRoot: process.cwd(),
       writeFiles: !options.dryRun,
@@ -42,16 +41,25 @@ program
     };
 
     // Find files to migrate
-    const files: string[] = [];
-    for (const pattern of config.include) {
-      const matches = await glob(pattern, { 
-        ignore: config.exclude,
-        cwd: config.projectRoot 
-      });
-      files.push(...matches);
+    let filesToMigrate: string[] = [];
+    
+    if (files && files.length > 0) {
+      // Direct file paths provided as arguments
+      filesToMigrate = files;
+      console.log(chalk.blue(`📁 Processing ${files.length} specified file(s)`));
+    } else {
+      // Use pattern-based file discovery
+      console.log(chalk.blue('🔍 Discovering files using patterns...'));
+      for (const pattern of config.include) {
+        const matches = await glob(pattern, { 
+          ignore: config.exclude,
+          cwd: config.projectRoot 
+        });
+        filesToMigrate.push(...matches);
+      }
     }
 
-    if (files.length === 0) {
+    if (filesToMigrate.length === 0) {
       console.log(chalk.yellow('No files found to migrate'));
       return;
     }
@@ -59,9 +67,9 @@ program
     const tool = new MigrationTool(config);
     
     if (options.dryRun) {
-      await tool.test(files);
+      await tool.test(filesToMigrate);
     } else {
-      const results = await tool.migrate(files);
+      const results = await tool.migrate(filesToMigrate);
       
       // Show summary
       const successful = results.filter(r => r.success);
