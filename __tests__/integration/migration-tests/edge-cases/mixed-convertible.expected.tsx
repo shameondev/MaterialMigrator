@@ -25,7 +25,7 @@ export const MixedStylesComponent: React.FC = () => {
       <div className="title">Card Title</div>
       <p>Some convertible styles like flex and padding should become Tailwind classes.</p>
       <p>But complex gradients, transforms, and pseudo-selectors should remain in makeStyles.</p>
-      <button className={cn(classes.button, "py-3 px-6 rounded-[8pxpx] border-0 cursor-pointer transition-all")}>
+      <button className={cn(classes.button, "py-3 px-6 rounded-lg border-0 cursor-pointer transition-all")}>
         Interactive Button
       </button>
     </div>;

@@ -15,7 +15,7 @@ export const CSSVariablesCalcComponent: React.FC = () => {
   const classes = useStyles();
   return <div className={cn(classes.customVariables, "bg-[var(--primary-color)] w-[var(--sidebar-width)px] flex flex-col")}>
       <div className="h-[calc(100vh - var(--header-height))] w-[calc(100% - var(--sidebar-width))] p-[calc(var(--spacing) * 2)px] m-[{CallExpression}px] relative">
-        <div className="w-[calc(50% - 20px)] h-[calc(100px + 2rem)] mt-[calc(1rem + 10px)] text-[16pxpx] leading-normal">
+        <div className="w-[calc(50% - 20px)] h-[calc(100px + 2rem)] mt-[calc(1rem + 10px)] text-base leading-normal">
           Content with calc() expressions
         </div>
         
@@ -30,7 +30,7 @@ export const CSSVariablesCalcComponent: React.FC = () => {
         Safe area adapted content
       </div>
       
-      <div className="w-[min(calc(100% - 40px), 800px)] h-[max(calc(50vh - 100px), 300px)] text-[clamp(14px, calc(1rem + 1vw), 24px)px] block">
+      <div className="w-[min(calc(100% - 40px), 800px)] h-[max(calc(50vh - 100px), 300px)] text-[clamp(14px, calc(1rem + 1vw), 24px)] block">
         Advanced calc expressions
       </div>
     </div>;

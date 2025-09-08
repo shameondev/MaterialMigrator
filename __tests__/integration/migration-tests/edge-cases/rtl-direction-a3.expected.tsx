@@ -31,7 +31,7 @@ export const RTLDirectionComponent: React.FC = () => {
   const classes = useStyles();
   return <div dir="ltr">
       <div className="ml-[{CallExpression}px] mr-[{CallExpression}px] pl-6 pr-3 bg-[#f0f0f0]">
-        <p className={cn(classes.textContent, "text-left text-[16pxpx]")}>
+        <p className={cn(classes.textContent, "text-left text-base")}>
           This content should adapt to RTL layouts
         </p>
       </div>

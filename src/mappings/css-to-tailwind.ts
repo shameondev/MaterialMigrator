@@ -166,7 +166,13 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
       '48': 'text-5xl',
       '60': 'text-6xl',
     };
-    return sizes[String(value)] ? [sizes[String(value)]] : [`text-[${value}px]`];
+    const val = String(value);
+    // Strip px for lookup, but preserve for arbitrary values
+    const numericValue = val.replace('px', '');
+    if (sizes[numericValue]) return [sizes[numericValue]];
+    // Don't add px if value already has units
+    const hasUnits = val.includes('px') || val.includes('rem') || val.includes('em') || val.includes('%');
+    return [`text-[${hasUnits ? val : `${val}px`}]`];
   },
 
   fontWeight: (value) => {
@@ -257,7 +263,11 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
       '4': 'border-4',
       '8': 'border-8',
     };
-    return widths[String(value)] ? [widths[String(value)]] : [`border-[${value}px]`];
+    const val = String(value);
+    if (widths[val]) return [widths[val]];
+    // Don't add px if value already has units
+    const hasUnits = val.includes('px') || val.includes('rem') || val.includes('em') || val.includes('%');
+    return [`border-[${hasUnits ? val : `${val}px`}]`];
   },
 
   borderRadius: (value) => {
@@ -274,7 +284,13 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
       '9999': 'rounded-full',
       '50%': 'rounded-full',
     };
-    return radii[String(value)] ? [radii[String(value)]] : [`rounded-[${value}px]`];
+    const val = String(value);
+    // Strip px for lookup, but preserve for arbitrary values
+    const numericValue = val.replace('px', '');
+    if (radii[numericValue]) return [radii[numericValue]];
+    // Don't add px if value already has units
+    const hasUnits = val.includes('px') || val.includes('rem') || val.includes('em') || val.includes('%');
+    return [`rounded-[${hasUnits ? val : `${val}px`}]`];
   },
 
   // Effects

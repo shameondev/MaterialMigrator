@@ -48,7 +48,7 @@ export const AdvancedGridComponent: React.FC = () => {
       <aside>Sidebar</aside>
       <main className={classes.gridItem}>
         <div className={cn(classes.responsiveGrid, "grid grid-cols-[repeat(auto-fit, minmax(250px, 1fr))] grid-rows-[repeat(auto-fill, minmax(200px, 1fr))]")}>
-          <div className={cn(classes.customProperties, "bg-[var(--primary-color)] rounded-[var(--border-radius)px] gap-[var(--grid-gap)px] w-[clamp(200px, 50vw, 800px)] h-[min(400px, 80vh)] text-[max(16px, 2vw)px]")}>Item 1</div>
+          <div className={cn(classes.customProperties, "bg-[var(--primary-color)] rounded-[var(--border-radius)px] gap-[var(--grid-gap)px] w-[clamp(200px, 50vw, 800px)] h-[min(400px, 80vh)] text-[max(16px, 2vw)]")}>Item 1</div>
           <div>Item 2</div>
           <div>Item 3</div>
           <div>Item 4</div>

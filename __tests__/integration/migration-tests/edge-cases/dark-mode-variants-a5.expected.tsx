@@ -88,7 +88,7 @@ export const DarkModeVariantsComponent: React.FC = () => {
         Interactive button with hover states
       </button>
       
-      <div className={cn(classes.printStyles, "text-[14pxpx]")}>
+      <div className={cn(classes.printStyles, "text-sm")}>
         Content optimized for print
       </div>
     </div>;

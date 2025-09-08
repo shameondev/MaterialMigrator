@@ -23,7 +23,7 @@ export const PartialConversionComponent: React.FC = () => {
         <p>This component tests 50% convertible properties scenario</p>
       </Card>
       
-      <Button className="text-primary text-[14pxpx]">
+      <Button className="text-primary text-sm">
         Interactive Button
       </Button>
     </div>;
