@@ -69,7 +69,7 @@ const useStyles = makeStyles(theme => ({
 export const DarkModeVariantsComponent: React.FC = () => {
   const classes = useStyles();
   return <div>
-      <div className={cn(classes.darkModeCard, "bg-white text-black p-[{CallExpression}px] rounded-lg")}>
+          <div className={cn(classes.darkModeCard, "bg-white text-black p-6 rounded-lg")}>
         <h2>Dark Mode Adaptive Card</h2>
         <p>This card should adapt to dark mode preferences</p>
       </div>
@@ -79,7 +79,7 @@ export const DarkModeVariantsComponent: React.FC = () => {
       </div>
       
       <div className={cn(classes.responsiveContainer, "w-full")}>
-        <div className={cn(classes.arbitraryStyles, "grid grid-cols-[repeat(auto-fit, minmax(200px, 1fr))] gap-[{CallExpression}px]")}>
+            <div className={cn(classes.arbitraryStyles, "grid grid-cols-[repeat(auto-fit, minmax(200px, 1fr))] gap-4")}>
           Grid with arbitrary properties
         </div>
       </div>

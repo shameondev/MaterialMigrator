@@ -14,12 +14,12 @@ const useStyles = makeStyles(theme => ({
 export const CSSVariablesCalcComponent: React.FC = () => {
   const classes = useStyles();
   return <div className={cn(classes.customVariables, "bg-[var(--primary-color)] w-[var(--sidebar-width)px] flex flex-col")}>
-      <div className="h-[calc(100vh - var(--header-height))] w-[calc(100% - var(--sidebar-width))] p-[calc(var(--spacing) * 2)px] m-[{CallExpression}px] relative">
+          <div className="h-[calc(100vh - var(--header-height))] w-[calc(100% - var(--sidebar-width))] p-[calc(var(--spacing) * 2)px] m-4 relative">
         <div className="w-[calc(50% - 20px)] h-[calc(100px + 2rem)] mt-[calc(1rem + 10px)] text-base leading-normal">
           Content with calc() expressions
         </div>
         
-        <div className="grid grid-cols-[repeat(auto-fit, minmax(calc(25% - 10px), 1fr))] gap-[calc(var(--gap) / 2)px] p-[{CallExpression}px]">
+        <div className="grid grid-cols-[repeat(auto-fit, minmax(calc(25% - 10px), 1fr))] gap-[calc(var(--gap) / 2)px] p-2">
           <div>Grid item 1</div>
           <div>Grid item 2</div>
           <div>Grid item 3</div>

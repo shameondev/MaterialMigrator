@@ -249,13 +249,34 @@ export class ASTParser {
       return path.join('.');
     }
 
-    // Function calls (rgba(), calc(), etc.)
-    if (t.isCallExpression(node) && t.isIdentifier(node.callee)) {
-      return {
-        type: 'function',
-        name: node.callee.name,
-        args: node.arguments.map(arg => this.extractCSSValue(arg)),
-      };
+    // Function calls (rgba(), calc(), theme.spacing(), etc.)
+    if (t.isCallExpression(node)) {
+      // Handle theme.spacing() calls specifically
+      if (t.isMemberExpression(node.callee)) {
+        const path = this.getMemberExpressionPath(node.callee);
+        if (path.length >= 2 && path[0] === 'theme' && path[1] === 'spacing') {
+          // Extract the spacing multiplier (e.g., 3 from theme.spacing(3))
+          const multiplier = node.arguments[0];
+          if (t.isNumericLiteral(multiplier)) {
+            const spacingValue = multiplier.value * 8; // Material-UI default: 8px per unit
+            return `${spacingValue}px`;
+          }
+          // Handle non-numeric arguments (variables, expressions)
+          return {
+            type: 'theme-spacing',
+            multiplier: this.extractCSSValue(multiplier),
+          };
+        }
+      }
+      
+      // Handle other function calls (rgba(), calc(), etc.)
+      if (t.isIdentifier(node.callee)) {
+        return {
+          type: 'function',
+          name: node.callee.name,
+          args: node.arguments.map(arg => this.extractCSSValue(arg)),
+        };
+      }
     }
 
     // Object expressions (nested styles, breakpoints)

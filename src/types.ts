@@ -23,6 +23,7 @@ export type CSSValue =
   | CSSValue[]
   | CSSFunction
   | ThemeReference
+  | ThemeSpacingValue
   | ConditionalValue
   | LogicalValue
   | CSSProperties; // Allow nested objects
@@ -37,6 +38,11 @@ export interface ThemeReference {
   type: 'theme';
   path: string[];
   fallback?: CSSValue;
+}
+
+export interface ThemeSpacingValue {
+  type: 'theme-spacing';
+  multiplier: CSSValue;
 }
 
 export interface ConditionalValue {

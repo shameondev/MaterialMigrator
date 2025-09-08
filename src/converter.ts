@@ -67,6 +67,20 @@ export class StyleConverter {
         if (this.isThemeReference(value)) {
           const themeConverted = this.themeMapper.resolveThemeReference(value as ThemeReference, property);
           tailwindClasses.push(...themeConverted);
+        } else if (this.isThemeSpacingValue(value)) {
+          // Handle theme.spacing() calls with dynamic multipliers
+          const themeSpacingValue = value as any;
+          const multiplierStr = this.formatCSSValue(themeSpacingValue.multiplier);
+          const displayValue = `theme.spacing(${multiplierStr})`;
+          const manualAction = `Convert to Tailwind spacing class based on the multiplier value`;
+          
+          unconvertible.push({
+            type: 'unconvertible',
+            property,
+            value: displayValue,
+            reason: 'Dynamic theme.spacing() call',
+            manualAction,
+          });
         } else if (this.isDynamicValue(value)) {
           // Dynamic values need special handling
           const dynamicValue = value as any;
@@ -133,6 +147,13 @@ export class StyleConverter {
     // Handle theme references
     if (this.isThemeReference(value)) {
       return this.themeMapper.resolveThemeReference(value as ThemeReference, property);
+    }
+
+    // Handle theme-spacing values (already converted to px in parser)
+    if (this.isThemeSpacingValue(value)) {
+      // This should not happen as theme.spacing() with numeric literals 
+      // should be converted to px strings in the parser
+      return [];
     }
 
     // Handle dynamic values (conditional, logical)
@@ -357,12 +378,43 @@ export class StyleConverter {
            value.type === 'theme';
   }
 
+  private isThemeSpacingValue(value: CSSValue): boolean {
+    return typeof value === 'object' && 
+           value !== null && 
+           !Array.isArray(value) &&
+           'type' in value &&
+           value.type === 'theme-spacing';
+  }
+
   private isCSSFunction(value: CSSValue): boolean {
     return typeof value === 'object' &&
            value !== null &&
            !Array.isArray(value) &&
            'type' in value &&
            value.type === 'function';
+  }
+
+  private formatCSSValue(value: CSSValue): string {
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      if ('type' in value) {
+        switch (value.type) {
+          case 'conditional':
+            return `conditional(${this.formatCSSValue((value as any).consequent)} | ${this.formatCSSValue((value as any).alternate)})`;
+          case 'logical':
+            return `logical(${this.formatCSSValue((value as any).left)} ${(value as any).operator} ${this.formatCSSValue((value as any).right)})`;
+          case 'function':
+            return `${(value as any).name}(${(value as any).args.map((arg: CSSValue) => this.formatCSSValue(arg)).join(', ')})`;
+          default:
+            return `[${value.type}]`;
+        }
+      }
+    }
+    
+    return String(value);
   }
 
   private isDynamicValue(value: CSSValue): boolean {
