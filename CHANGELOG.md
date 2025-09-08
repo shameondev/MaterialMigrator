@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-09-08
+
+### Added
+- Comprehensive theme spacing conversion support
+- Theme.spacing() parser with unit and multiplier support
+- StyleConverter integration for theme spacing values
+- Dynamic theme spacing expression handling
+- Edge case support for mixed spacing with other properties
+- Proper Tailwind class generation (p-2, m-4) from theme values
+
+### Fixed
+- Resolved 'pxpx' issue in CSS to Tailwind conversion where px units were duplicated
+- Enhanced fontSize, borderRadius, and borderWidth mappings to prevent unit duplication
+- Fixed empty style removal logic in transformer
+- Updated integration test expectations to match corrected behavior
+- Fixed vendor prefix handling in CSS conversions
+
+### Changed
+- Improved CSS-to-Tailwind mapping functions for better unit handling
+- Enhanced test runner with detailed failure reporting
+- Updated migration tool behavior for better theme spacing support
+
 ## [1.1.0] - 2025-09-04
 
 ### Added
