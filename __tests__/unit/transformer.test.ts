@@ -208,12 +208,92 @@ describe('CodeTransformer', () => {
       expect(result.migratedCode).toContain('className={cn(classes.root, "flex")}');
       expect(result.stats.unconvertibleStyles).toBe(1);
       
+      // Should add cn import when mixed classes are used
+      expect(result.migratedCode).toContain('import { cn } from "@/lib/utils"');
+      
       // Check that the conversion included both convertible and unconvertible properties
       const conversion = result.conversions[0];
       expect(conversion.tailwindClasses).toContain('flex');
       expect(conversion.unconvertible).toBeDefined();
       expect(conversion.unconvertible.length).toBe(1);
       expect(conversion.unconvertible[0].property).toBe('animation');
+    });
+
+    it('should not add cn import for fully unconvertible styles', () => {
+      const sourceCode = `
+        import React from 'react';
+        import { makeStyles } from '@material-ui/core/styles';
+
+        const useStyles = makeStyles(() => ({
+          root: {
+            animation: 'fadeIn 0.3s ease-in-out',
+            transform: 'scale(1.02)',
+            '&:hover': { opacity: 0.8 }
+          },
+        }));
+
+        export const Component = () => {
+          const classes = useStyles();
+          return <div className={classes.root}>Hello</div>;
+        };
+      `;
+
+      const extractions: MakeStylesExtraction[] = [{
+        importName: 'makeStyles',
+        hookName: 'useStyles',
+        styles: [{
+          name: 'root',
+          properties: {
+            animation: 'fadeIn 0.3s ease-in-out',
+            transform: 'scale(1.02)',
+            '&:hover': { opacity: 0.8 }
+          },
+          sourceLocation: { start: 0, end: 0, line: 0, column: 0 }
+        }],
+        sourceFile: 'test.tsx'
+      }];
+
+      const conversions = new Map<string, TailwindConversion>();
+      conversions.set('useStyles.root', {
+        original: { animation: 'fadeIn 0.3s ease-in-out', transform: 'scale(1.02)', '&:hover': { opacity: 0.8 } },
+        tailwindClasses: [], // No convertible classes
+        warnings: [],
+        unconvertible: [
+          {
+            type: 'unconvertible',
+            property: 'animation',
+            value: 'fadeIn 0.3s ease-in-out',
+            reason: 'CSS animations require manual conversion',
+            manualAction: 'Use Tailwind animations or move to separate CSS file'
+          },
+          {
+            type: 'unconvertible', 
+            property: 'transform',
+            value: 'scale(1.02)',
+            reason: 'Complex transforms require manual conversion',
+            manualAction: 'Use Tailwind transforms or move to separate CSS file'
+          },
+          {
+            type: 'unconvertible',
+            property: '&:hover',
+            value: { opacity: 0.8 },
+            reason: 'Pseudo-selectors require manual conversion', 
+            manualAction: 'Use Tailwind hover utilities or move to separate CSS file'
+          }
+        ]
+      });
+
+      const transformer = new CodeTransformer(sourceCode);
+      const result = transformer.transform(extractions, conversions);
+
+      // Should preserve original makeStyles without changes
+      expect(result.migratedCode).toContain('const useStyles = makeStyles');
+      expect(result.migratedCode).toContain('className={classes.root}');
+      
+      // Should NOT add cn import for fully unconvertible styles
+      expect(result.migratedCode).not.toContain('import { cn } from "@/lib/utils"');
+      
+      expect(result.stats.unconvertibleStyles).toBe(3);
     });
 
     it('should handle code with no makeStyles', () => {
