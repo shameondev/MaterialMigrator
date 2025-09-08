@@ -14,10 +14,9 @@
     "test": "jest",
     "test:unit": "jest __tests__/unit",
     "test:integration": "jest __tests__/integration",
+    "test:migration": "tsx __tests__/integration/run-migration-tests.ts",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:dev": "tsx src/test-runner.ts",
-    "test:migration": "tsx __tests__/integration/run-migration-tests.ts"
+    "test:coverage": "jest --coverage"
   },
   "keywords": [
     "tailwind",

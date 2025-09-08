@@ -60,18 +60,22 @@ export class CodeTransformer {
     const removedImports: string[] = [];
 
     try {
-      // Determine which extractions can be fully migrated
+      // Determine which extractions can be fully or partially migrated
       const fullyMigratableExtractions = this.getFullyMigratableExtractions(extractions, conversions);
+      const partiallyMigratableExtractions = this.getPartiallyMigratableExtractions(extractions, conversions);
       
-      // 1. Replace className usages with Tailwind classes (only for successfully converted styles)
-      this.replaceClassNameUsages(fullyMigratableExtractions, conversions, classNameReplacements);
+      // 1. Replace className usages with mixed Tailwind + makeStyles classes
+      this.replaceMixedClassNameUsages([...fullyMigratableExtractions, ...partiallyMigratableExtractions], conversions, classNameReplacements);
 
       // 2. Remove makeStyles hooks and their calls (only for fully migratable extractions)
       if (fullyMigratableExtractions.length > 0) {
         this.removeMakeStylesCalls(fullyMigratableExtractions, removedImports);
-
-        // 3. Remove or update imports (only after successful migrations)
         this.updateImports(fullyMigratableExtractions, removedImports);
+      }
+
+      // 3. Update makeStyles calls for partially migratable extractions (remove converted properties)
+      if (partiallyMigratableExtractions.length > 0) {
+        this.updatePartialMakeStylesCalls(partiallyMigratableExtractions, conversions);
       }
 
       // 4. Add cn() utility for dynamic classes if needed
@@ -168,12 +172,19 @@ export class CodeTransformer {
         importedStyles.some(imp => imp.hookName === ext.hookName)
       );
 
-      // Determine which extractions can be fully migrated
+      // Determine which extractions can be fully or partially migrated
       const fullyMigratableLocalExtractions = this.getFullyMigratableExtractions(localExtractions, conversions);
       const fullyMigratableImportedExtractions = this.getFullyMigratableExtractions(importedExtractions, conversions);
+      const partiallyMigratableLocalExtractions = this.getPartiallyMigratableExtractions(localExtractions, conversions);
+      const partiallyMigratableImportedExtractions = this.getPartiallyMigratableExtractions(importedExtractions, conversions);
       
-      // Replace className usages with Tailwind classes
-      this.replaceClassNameUsages([...fullyMigratableLocalExtractions, ...fullyMigratableImportedExtractions], conversions, classNameReplacements);
+      // Replace className usages with mixed Tailwind + makeStyles classes
+      this.replaceMixedClassNameUsages([
+        ...fullyMigratableLocalExtractions, 
+        ...fullyMigratableImportedExtractions,
+        ...partiallyMigratableLocalExtractions,
+        ...partiallyMigratableImportedExtractions
+      ], conversions, classNameReplacements);
 
       // Remove local makeStyles calls and hooks
       if (fullyMigratableLocalExtractions.length > 0) {
@@ -184,6 +195,11 @@ export class CodeTransformer {
       // Remove imported style hooks that are no longer needed
       if (fullyMigratableImportedExtractions.length > 0) {
         this.removeImportedStyleUsages(fullyMigratableImportedExtractions, importedStyles, removedImports);
+      }
+
+      // Update makeStyles calls for partially migratable local extractions
+      if (partiallyMigratableLocalExtractions.length > 0) {
+        this.updatePartialMakeStylesCalls(partiallyMigratableLocalExtractions, conversions);
       }
 
       // Add cn() utility for dynamic classes if needed
@@ -269,16 +285,30 @@ export class CodeTransformer {
         const styleKey = `${extraction.hookName}.${style.name}`;
         const conversion = conversions.get(styleKey);
         
-        // Consider it migratable if it has Tailwind classes (allow partial migration)
-        return conversion && (
-          conversion.tailwindClasses.length > 0 || 
-          Object.keys(style.properties).length === 0
-        );
+        // Only consider fully migratable if ALL properties are convertible (no unconvertible properties)
+        return conversion && 
+               conversion.tailwindClasses.length > 0 && 
+               conversion.unconvertible.length === 0;
       });
     });
   }
 
-  private replaceClassNameUsages(
+  private getPartiallyMigratableExtractions(
+    extractions: MakeStylesExtraction[],
+    conversions: Map<string, TailwindConversion>
+  ): MakeStylesExtraction[] {
+    return extractions.filter(extraction => {
+      // Include extractions where at least one style has convertible properties
+      // but some styles may have unconvertible properties too
+      return extraction.styles.some(style => {
+        const styleKey = `${extraction.hookName}.${style.name}`;
+        const conversion = conversions.get(styleKey);
+        return conversion && conversion.tailwindClasses.length > 0;
+      });
+    });
+  }
+
+  private replaceMixedClassNameUsages(
     extractions: MakeStylesExtraction[],
     conversions: Map<string, TailwindConversion>,
     classNameReplacements: Map<string, string>
@@ -349,8 +379,30 @@ export class CodeTransformer {
       
       if (conversion && conversion.tailwindClasses.length > 0) {
         const tailwindString = conversion.tailwindClasses.join(' ');
-        classNameReplacements.set(`${classesVarName}.${styleName}`, tailwindString);
-        return t.stringLiteral(tailwindString);
+        
+        // If there are unconvertible properties, combine Tailwind classes with original makeStyles class using cn()
+        if (conversion.unconvertible.length > 0) {
+          const originalClassExpr = t.memberExpression(
+            t.identifier(classesVarName),
+            t.identifier(styleName)
+          );
+          
+          // Create cn(classes.styleName, "tailwindClasses") call
+          const cnCall = t.callExpression(
+            t.identifier('cn'),
+            [
+              originalClassExpr,
+              t.stringLiteral(tailwindString)
+            ]
+          );
+          
+          classNameReplacements.set(`${classesVarName}.${styleName}`, `cn(${classesVarName}.${styleName}, "${tailwindString}")`);
+          return cnCall;
+        } else {
+          // Fully convertible - use only Tailwind classes
+          classNameReplacements.set(`${classesVarName}.${styleName}`, tailwindString);
+          return t.stringLiteral(tailwindString);
+        }
       }
     }
 
@@ -367,8 +419,32 @@ export class CodeTransformer {
       
       if (conversion && conversion.tailwindClasses.length > 0) {
         const tailwindString = conversion.tailwindClasses.join(' ');
-        classNameReplacements.set(`${classesVarName}?.${styleName}`, tailwindString);
-        return t.stringLiteral(tailwindString);
+        
+        // If there are unconvertible properties, combine Tailwind classes with original makeStyles class using cn()
+        if (conversion.unconvertible.length > 0) {
+          const originalClassExpr = t.optionalMemberExpression(
+            t.identifier(classesVarName),
+            t.identifier(styleName),
+            false,
+            true
+          );
+          
+          // Create cn(classes?.styleName, "tailwindClasses") call
+          const cnCall = t.callExpression(
+            t.identifier('cn'),
+            [
+              originalClassExpr,
+              t.stringLiteral(tailwindString)
+            ]
+          );
+          
+          classNameReplacements.set(`${classesVarName}?.${styleName}`, `cn(${classesVarName}?.${styleName}, "${tailwindString}")`);
+          return cnCall;
+        } else {
+          // Fully convertible - use only Tailwind classes
+          classNameReplacements.set(`${classesVarName}?.${styleName}`, tailwindString);
+          return t.stringLiteral(tailwindString);
+        }
       }
     }
 
@@ -406,6 +482,114 @@ export class CodeTransformer {
     }
 
     return null;
+  }
+
+  /**
+   * Update makeStyles calls for partially migratable extractions
+   * Remove converted properties, keep unconvertible ones
+   */
+  private updatePartialMakeStylesCalls(
+    extractions: MakeStylesExtraction[],
+    conversions: Map<string, TailwindConversion>
+  ): void {
+    for (const extraction of extractions) {
+      traverseFn(this.ast, {
+        VariableDeclarator: (path: NodePath<t.VariableDeclarator>) => {
+          if (
+            t.isCallExpression(path.node.init) &&
+            t.isIdentifier(path.node.init.callee) &&
+            path.node.init.callee.name === 'makeStyles'
+          ) {
+            const callExpr = path.node.init;
+            const arg = callExpr.arguments[0];
+            
+            if (t.isArrowFunctionExpression(arg) || t.isFunctionExpression(arg)) {
+              const body = arg.body;
+              
+              if (t.isObjectExpression(body)) {
+                // Update the object expression to remove converted properties
+                this.updateStylesObjectExpression(body, extraction, conversions);
+              } else if (t.isBlockStatement(body)) {
+                // Handle function body with return statement
+                const returnStatement = body.body.find(stmt => t.isReturnStatement(stmt)) as t.ReturnStatement;
+                if (returnStatement && t.isObjectExpression(returnStatement.argument)) {
+                  this.updateStylesObjectExpression(returnStatement.argument, extraction, conversions);
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  /**
+   * Update a styles object expression to remove converted properties
+   */
+  private updateStylesObjectExpression(
+    objExpr: t.ObjectExpression,
+    extraction: MakeStylesExtraction,
+    conversions: Map<string, TailwindConversion>
+  ): void {
+    objExpr.properties = objExpr.properties.filter(prop => {
+      if (t.isObjectProperty(prop) || t.isObjectMethod(prop)) {
+        let key: string | null = null;
+        
+        if (t.isIdentifier(prop.key)) {
+          key = prop.key.name;
+        } else if (t.isStringLiteral(prop.key)) {
+          key = prop.key.value;
+        }
+        
+        if (key) {
+          const styleKey = `${extraction.hookName}.${key}`;
+          const conversion = conversions.get(styleKey);
+          
+          // Keep the style if it has unconvertible properties
+          if (conversion && conversion.unconvertible.length > 0) {
+            // Remove converted properties from this style object
+            if (t.isObjectProperty(prop) && t.isObjectExpression(prop.value)) {
+              this.removeConvertedProperties(prop.value, conversion);
+            }
+            return true; // Keep the style object
+          } else if (conversion && conversion.tailwindClasses.length > 0) {
+            // Remove fully converted styles
+            return false;
+          }
+        }
+      }
+      
+      return true; // Keep non-style properties
+    });
+  }
+
+  /**
+   * Remove converted CSS properties from a style object
+   */
+  private removeConvertedProperties(
+    styleObj: t.ObjectExpression,
+    conversion: TailwindConversion
+  ): void {
+    const unconvertibleProps = new Set(conversion.unconvertible.map(u => u.property));
+    
+    styleObj.properties = styleObj.properties.filter(prop => {
+      if (t.isObjectProperty(prop) || t.isObjectMethod(prop)) {
+        let propName: string | null = null;
+        
+        if (t.isIdentifier(prop.key)) {
+          propName = prop.key.name;
+        } else if (t.isStringLiteral(prop.key)) {
+          propName = prop.key.value;
+        }
+        
+        if (propName) {
+          // Keep only unconvertible properties
+          return unconvertibleProps.has(propName);
+        }
+      }
+      
+      return true; // Keep non-property items
+    });
   }
 
   private transformTemplateLiteral(
@@ -599,35 +783,45 @@ export class CodeTransformer {
 
   private addClsxImportIfNeeded(classNameReplacements: Map<string, string>): void {
     // Check if we need to add cn utility for conditional classes
-    let needsClsxUtility = false;
+    let needsCnUtility = false;
 
-    // Analyze existing className expressions to see if they're dynamic
-    traverseFn(this.ast, {
-      JSXAttribute: (path: NodePath<t.JSXAttribute>) => {
-        const { node } = path;
-        
-        if (
-          t.isJSXIdentifier(node.name) &&
-          node.name.name === 'className' &&
-          node.value &&
-          t.isJSXExpressionContainer(node.value)
-        ) {
-          const expr = node.value.expression;
+    // Check if any className replacements use cn()
+    for (const replacement of classNameReplacements.values()) {
+      if (replacement.includes('cn(')) {
+        needsCnUtility = true;
+        break;
+      }
+    }
+
+    // Also analyze existing className expressions to see if they're dynamic
+    if (!needsCnUtility) {
+      traverseFn(this.ast, {
+        JSXAttribute: (path: NodePath<t.JSXAttribute>) => {
+          const { node } = path;
           
-          // Check for complex expressions that might benefit from cn()
           if (
-            t.isConditionalExpression(expr) ||
-            t.isLogicalExpression(expr) ||
-            t.isCallExpression(expr) ||
-            (t.isTemplateLiteral(expr) && expr.expressions.length > 0)
+            t.isJSXIdentifier(node.name) &&
+            node.name.name === 'className' &&
+            node.value &&
+            t.isJSXExpressionContainer(node.value)
           ) {
-            needsClsxUtility = true;
+            const expr = node.value.expression;
+            
+            // Check for cn() calls or complex expressions that might benefit from cn()
+            if (
+              (t.isCallExpression(expr) && t.isIdentifier(expr.callee) && expr.callee.name === 'cn') ||
+              t.isConditionalExpression(expr) ||
+              t.isLogicalExpression(expr) ||
+              (t.isTemplateLiteral(expr) && expr.expressions.length > 0)
+            ) {
+              needsCnUtility = true;
+            }
           }
         }
-      }
-    });
+      });
+    }
 
-    if (needsClsxUtility) {
+    if (needsCnUtility) {
       // Check if cn is already imported
       let hasCnImport = false;
 

@@ -204,8 +204,8 @@ describe('CodeTransformer', () => {
       const transformer = new CodeTransformer(sourceCode);
       const result = transformer.transform(extractions, conversions);
 
-      // Should convert what it can and track unconvertible styles
-      expect(result.migratedCode).toContain('className="flex"');
+      // Should create mixed className using cn() function
+      expect(result.migratedCode).toContain('className={cn(classes.root, "flex")}');
       expect(result.stats.unconvertibleStyles).toBe(1);
       
       // Check that the conversion included both convertible and unconvertible properties
