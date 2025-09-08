@@ -84,7 +84,7 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
     const val = String(value);
     if (val.includes('repeat')) {
       // Extract repeat patterns: repeat(3, 1fr) -> grid-cols-3
-      const repeatMatch = val.match(/repeat\\((\\d+),\\s*[^)]+\\)/);
+      const repeatMatch = val.match(/repeat\((\d+),\s*[^)]+\)/);
       if (repeatMatch) {
         return [`grid-cols-${repeatMatch[1]}`];
       }
@@ -409,6 +409,10 @@ function convertSpacing(value: CSSValue, prefix: string): string[] {
  * Convert single spacing value to Tailwind spacing scale
  */
 function convertSingleSpacing(value: string, prefix: string): string {
+  // Handle special keywords
+  if (value === 'auto') return 'auto';
+  if (value === '100%') return 'full';
+  
   const numValue = parseFloat(value.replace(/px|rem|em/, ''));
   
   // Tailwind spacing scale (4px = 1 unit)
@@ -436,7 +440,9 @@ function convertSingleSpacing(value: string, prefix: string): string {
     96: '24',
   };
 
-  return spacingScale[numValue] || `[${value}]`;
+  const fallbackValue = value || '';
+  const hasPx = fallbackValue.includes('px') || fallbackValue.includes('rem') || fallbackValue.includes('em') || fallbackValue.includes('%');
+  return spacingScale[numValue] || `[${hasPx ? fallbackValue : `${fallbackValue}px`}]`;
 }
 
 /**
@@ -459,6 +465,11 @@ function convertSize(value: CSSValue, prefix: string): string[] {
       75: '3/4',
     };
     return fractions[percent] ? [`${prefix}-${fractions[percent]}`] : [`${prefix}-[${val}]`];
+  }
+  
+  // Handle pure numbers as pixel values in arbitrary format (except 0)
+  if (/^[1-9]\d*$/.test(val)) {
+    return [`${prefix}-[${val}px]`];
   }
   
   // Handle pixel values

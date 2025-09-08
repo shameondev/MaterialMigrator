@@ -40,7 +40,7 @@ export class ThemeMapper {
     }
 
     // Fallback: use CSS variable
-    return [`var(--theme-${path.replace(/\\./g, '-')})`];
+    return [`var(--theme-${path.replace(/\./g, '-')})`];
   }
 
   private resolveCustomTheme(path: string[], cssProperty: string): string[] {
@@ -60,7 +60,7 @@ export class ThemeMapper {
     }
 
     // Fallback: use CSS variable
-    return [`var(--${customProperty.replace(/\\./g, '-')})`];
+    return [`var(--${customProperty.replace(/\./g, '-')})`];
   }
 
   private mapBackgroundColor(customProperty: string): string[] {
@@ -91,7 +91,7 @@ export class ThemeMapper {
 
     return colorMappings[customProperty] 
       ? [colorMappings[customProperty]]
-      : [`bg-[var(--${customProperty.replace(/\\./g, '-')})]`];
+      : [`bg-[var(--${customProperty.replace(/\./g, '-')})]`];
   }
 
   private mapTextColor(customProperty: string): string[] {
@@ -118,7 +118,7 @@ export class ThemeMapper {
 
     return colorMappings[customProperty]
       ? [colorMappings[customProperty]]
-      : [`text-[var(--${customProperty.replace(/\\./g, '-')})]`];
+      : [`text-[var(--${customProperty.replace(/\./g, '-')})]`];
   }
 
   private mapBorderColor(customProperty: string): string[] {
@@ -132,7 +132,7 @@ export class ThemeMapper {
 
     return colorMappings[customProperty]
       ? [colorMappings[customProperty]]
-      : [`border-[var(--${customProperty.replace(/\\./g, '-')})]`];
+      : [`border-[var(--${customProperty.replace(/\./g, '-')})]`];
   }
 
   private mapBorderRadius(customProperty: string): string[] {
@@ -148,20 +148,21 @@ export class ThemeMapper {
 
     return radiusMappings[customProperty]
       ? [radiusMappings[customProperty]]
-      : [`rounded-[var(--${customProperty.replace(/\\./g, '-')})]`];
+      : [`rounded-[var(--${customProperty.replace(/\./g, '-')})]`];
   }
 
   private resolvePalette(path: string[], cssProperty: string): string[] {
     // Handle Material-UI palette: theme.palette.primary.main
     const [category, shade] = path;
     
-    if (category === 'primary') {
+    // Only use direct mappings when shade is provided
+    if (shade && category === 'primary') {
       if (cssProperty === 'backgroundColor') return ['bg-primary'];
       if (cssProperty === 'color') return ['text-primary'];
       if (cssProperty === 'borderColor') return ['border-primary'];
     }
     
-    if (category === 'secondary') {
+    if (shade && category === 'secondary') {
       if (cssProperty === 'backgroundColor') return ['bg-secondary'];
       if (cssProperty === 'color') return ['text-secondary'];
       if (cssProperty === 'borderColor') return ['border-secondary'];
@@ -282,7 +283,7 @@ export class ThemeMapper {
     const cssVars: string[] = [];
     
     for (const ref of themeRefs) {
-      const varName = `--theme-${ref.replace(/\\./g, '-')}`;
+      const varName = `--theme-${ref.replace(/\./g, '-')}`;
       cssVars.push(`  ${varName}: /* TODO: Define theme value for ${ref} */;`);
     }
 

@@ -5,13 +5,11 @@ import { resolve, basename } from 'path';
 import { glob } from 'glob';
 import { program } from 'commander';
 import chalk from 'chalk';
-import { ASTParser } from './parser.js';
-import { StyleConverter } from './converter.js';
-import { CodeTransformer } from './transformer.js';
-import { ImportResolver } from './import-resolver.js';
-import type { MigrationConfig, MigrationResult, TailwindConversion, StyleImport, MakeStylesExtraction } from './types.js';
+import { MigrationTool } from './migration-tool.js';
+import type { MigrationConfig } from './types.js';
 
-export class MigrationTool {
+// Re-export for backward compatibility
+export { MigrationTool };
   private config: MigrationConfig;
   private converter: StyleConverter;
   private importResolver: ImportResolver;
@@ -399,7 +397,28 @@ program
     await tool.test(files);
   });
 
-// Run the CLI
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run the CLI when executed directly (not when imported in tests)
+// Avoid import.meta in Jest environment to prevent syntax errors
+const isMainModule = (() => {
+  // Check if we're in Jest environment
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+    return false;
+  }
+  
+  // Check if we're in Jest (another way)
+  if (typeof global !== 'undefined' && (global as any).it && (global as any).describe) {
+    return false;
+  }
+  
+  try {
+    // Use eval to prevent Jest from parsing import.meta at compile time
+    const importMeta = eval('import.meta');
+    return importMeta.url === `file://${process.argv[1]}`;
+  } catch {
+    return false;
+  }
+})();
+
+if (isMainModule) {
   program.parse();
 }

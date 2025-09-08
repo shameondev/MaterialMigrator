@@ -86,7 +86,7 @@ describe('CodeTransformer', () => {
       expect(result.migratedCode).toContain('className="flex p-4"');
       expect(result.migratedCode).not.toContain('makeStyles');
       expect(result.migratedCode).not.toContain('const classes = useStyles()');
-      expect(result.classNameReplacements.get('root')).toBe('flex p-4');
+      expect(result.classNameReplacements.get('classes.root')).toBe('flex p-4');
     });
 
     it('should handle multiple style classes', () => {
@@ -204,10 +204,16 @@ describe('CodeTransformer', () => {
       const transformer = new CodeTransformer(sourceCode);
       const result = transformer.transform(extractions, conversions);
 
-      // Should preserve original structure when there are unconvertible styles
-      expect(result.migratedCode).toContain('makeStyles');
-      expect(result.migratedCode).toContain('const classes = useStyles()');
-      expect(result.migratedCode).toContain('className={classes.root}');
+      // Should convert what it can and track unconvertible styles
+      expect(result.migratedCode).toContain('className="flex"');
+      expect(result.stats.unconvertibleStyles).toBe(1);
+      
+      // Check that the conversion included both convertible and unconvertible properties
+      const conversion = result.conversions[0];
+      expect(conversion.tailwindClasses).toContain('flex');
+      expect(conversion.unconvertible).toBeDefined();
+      expect(conversion.unconvertible.length).toBe(1);
+      expect(conversion.unconvertible[0].property).toBe('animation');
     });
 
     it('should handle code with no makeStyles', () => {

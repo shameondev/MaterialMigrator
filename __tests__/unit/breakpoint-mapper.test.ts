@@ -418,8 +418,8 @@ describe('BreakpointMapper', () => {
       const result = breakpointMapper.validateBreakpointLogic(breakpointStyles);
       
       expect(result.valid).toBe(false);
-      expect(result.warnings).toContain('Mixed up() and down() breakpoints detected');
-      expect(result.suggestions).toContain('Consider using consistent breakpoint direction');
+      expect(result.warnings).toContain('Mixed up() and down() breakpoints detected - ensure logic is correct');
+      expect(result.suggestions).toContain('Consider using consistent breakpoint direction or between() for ranges');
     });
 
     it('should warn about too many breakpoints', () => {
@@ -434,7 +434,7 @@ describe('BreakpointMapper', () => {
       const result = breakpointMapper.validateBreakpointLogic(breakpointStyles);
       
       expect(result.valid).toBe(false);
-      expect(result.warnings).toContain('High number of breakpoints (5)');
+      expect(result.warnings).toContain('High number of breakpoints (5) - consider consolidating');
       expect(result.suggestions).toContain('Use fewer breakpoints for simpler responsive design');
     });
 
@@ -524,7 +524,7 @@ describe('BreakpointMapper', () => {
       // Validate logic
       const validation = breakpointMapper.validateBreakpointLogic(extracted.breakpointStyles);
       expect(validation.valid).toBe(false); // Mixed up/down
-      expect(validation.warnings).toContain('Mixed up() and down() breakpoints detected');
+      expect(validation.warnings).toContain('Mixed up() and down() breakpoints detected - ensure logic is correct');
 
       // Convert specific breakpoint
       const conversion = breakpointMapper.convertBreakpointStyles(

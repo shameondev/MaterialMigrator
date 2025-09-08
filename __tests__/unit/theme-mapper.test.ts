@@ -75,7 +75,7 @@ describe('ThemeMapper', () => {
         };
         
         const result = themeMapper.resolveThemeReference(themeRef, 'color');
-        expect(result).toEqual(['var(--unknownProperty)']);
+        expect(result).toEqual(['text-[var(--unknownProperty)]']);
       });
     });
 

@@ -96,13 +96,16 @@ export interface UnconvertibleStyle {
 }
 
 export interface MigrationResult {
-  originalFile: string;
+  filePath: string;
+  success: boolean;
+  error?: string;
+  originalCode: string;
   migratedCode: string;
   conversions: TailwindConversion[];
   classNameReplacements: Map<string, string>;
   removedImports: string[];
-  errors: MigrationError[];
-  warnings: ConversionWarning[];
+  errors?: MigrationError[];
+  warnings?: ConversionWarning[];
   stats: {
     totalStyles: number;
     convertedStyles: number;
@@ -123,6 +126,10 @@ export interface MigrationError {
 
 // Configuration for the migration tool
 export interface MigrationConfig {
+  // Project settings
+  projectRoot: string;
+  writeFiles: boolean;
+  
   // File patterns to include/exclude
   include: string[];
   exclude: string[];
@@ -150,6 +157,7 @@ export interface BreakpointMapping {
   md: number;
   lg: number;
   xl: number;
+  xxl?: number; // Optional for extended breakpoints
 }
 
 // Theme mapping configuration
@@ -185,6 +193,22 @@ export interface FileStyleMapping {
   files: Map<string, MakeStylesExtraction[]>;
   imports: Map<string, StyleImport[]>;
   exports: Map<string, MakeStylesExtraction[]>;
+}
+
+export interface TransformResult {
+  originalCode: string;
+  migratedCode: string;
+  conversions: TailwindConversion[];
+  classNameReplacements: Map<string, string>;
+  removedImports: string[];
+  errors?: MigrationError[];
+  warnings?: ConversionWarning[];
+  stats: {
+    totalStyles: number;
+    convertedStyles: number;
+    unconvertibleStyles: number;
+    classNameReplacements: number;
+  };
 }
 
 export interface CrossFileTransformOptions {

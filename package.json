@@ -2,9 +2,9 @@
   "name": "mttwm",
   "version": "1.1.0",
   "description": "Automated CSS-in-JS to Tailwind CSS migration tool for React applications",
-  "main": "dist/migrate.js",
+  "main": "dist/index.js",
   "bin": {
-    "mttwm": "dist/migrate.js"
+    "mttwm": "dist/cli.js"
   },
   "type": "module",
   "scripts": {

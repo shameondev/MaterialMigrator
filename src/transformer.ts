@@ -12,7 +12,7 @@ import * as t from '@babel/types';
 import type { 
   MakeStylesExtraction,
   ClassNameUsage,
-  MigrationResult,
+  TransformResult,
   TailwindConversion,
   MigrationError,
   ConversionWarning,
@@ -53,7 +53,7 @@ export class CodeTransformer {
   public transform(
     extractions: MakeStylesExtraction[],
     conversions: Map<string, TailwindConversion>
-  ): MigrationResult {
+  ): TransformResult {
     const errors: MigrationError[] = [];
     const warnings: ConversionWarning[] = [];
     const classNameReplacements = new Map<string, string>();
@@ -77,12 +77,14 @@ export class CodeTransformer {
       // 4. Add cn() utility for dynamic classes if needed
       this.addClsxImportIfNeeded(classNameReplacements);
 
-      // Generate the transformed code
-      const migratedCode = generateFn(this.ast, {
-        retainLines: false,
-        compact: false,
-        concise: false,
-      }).code;
+      // Generate the transformed code - if no changes were made, return original
+      const migratedCode = fullyMigratableExtractions.length > 0 || classNameReplacements.size > 0
+        ? generateFn(this.ast, {
+            retainLines: false,
+            compact: false,
+            concise: false,
+          }).code
+        : this.sourceCode;
 
       // Collect warnings from conversions
       for (const conversion of conversions.values()) {
@@ -104,7 +106,7 @@ export class CodeTransformer {
       );
 
       return {
-        originalFile: this.sourceCode,
+        originalCode: this.sourceCode,
         migratedCode,
         conversions: Array.from(conversions.values()),
         classNameReplacements,
@@ -127,7 +129,7 @@ export class CodeTransformer {
       });
 
       return {
-        originalFile: this.sourceCode,
+        originalCode: this.sourceCode,
         migratedCode: this.sourceCode, // Return original on error
         conversions: [],
         classNameReplacements,
@@ -151,7 +153,7 @@ export class CodeTransformer {
     extractions: MakeStylesExtraction[],
     conversions: Map<string, TailwindConversion>,
     importedStyles: StyleImport[]
-  ): MigrationResult {
+  ): TransformResult {
     const errors: MigrationError[] = [];
     const warnings: ConversionWarning[] = [];
     const classNameReplacements = new Map<string, string>();
@@ -214,7 +216,7 @@ export class CodeTransformer {
       );
 
       return {
-        originalFile: this.sourceCode,
+        originalCode: this.sourceCode,
         migratedCode,
         conversions: Array.from(conversions.values()),
         classNameReplacements,
@@ -237,7 +239,7 @@ export class CodeTransformer {
       });
 
       return {
-        originalFile: this.sourceCode,
+        originalCode: this.sourceCode,
         migratedCode: this.sourceCode, // Return original on error
         conversions: [],
         classNameReplacements,
@@ -267,7 +269,7 @@ export class CodeTransformer {
         const styleKey = `${extraction.hookName}.${style.name}`;
         const conversion = conversions.get(styleKey);
         
-        // Consider it migratable if it has Tailwind classes OR if it's an empty style
+        // Consider it migratable if it has Tailwind classes (allow partial migration)
         return conversion && (
           conversion.tailwindClasses.length > 0 || 
           Object.keys(style.properties).length === 0
@@ -817,13 +819,13 @@ export class CodeTransformer {
 
           if (conversion.warnings.length > 0) {
             preview.push('**Warnings:**');
-            conversion.warnings.forEach(w => preview.push(`- ${w.message}`));
+            conversion.warnings.forEach(w => preview.push(`- ⚠️ ${w.message}`));
           }
 
           if (conversion.unconvertible.length > 0) {
             preview.push('**Manual Review Required:**');
             conversion.unconvertible.forEach(u => 
-              preview.push(`- ${u.property}: ${u.value} (${u.reason})`)
+              preview.push(`- ❌ ${u.property}: ${u.value} (${u.reason})`)
             );
           }
 
