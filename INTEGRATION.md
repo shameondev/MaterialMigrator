@@ -30,7 +30,7 @@ npm link
 npm link mttwm
 ```
 
-## Usage in dash-app
+## Usage
 
 ### 1. Test Migration (Dry Run)
 Preview changes without modifying files:
@@ -89,9 +89,9 @@ npx mttwm migrate \
   --generate-report
 ```
 
-## dash-app Specific Configuration
+## Specific Configuration
 
-### Recommended Migration Strategy for dash-app:
+### Recommended Migration Strategy:
 
 1. **Phase 1: Components**
    ```bash
@@ -178,7 +178,7 @@ After running MaterialMigrator:
 - Review the migration report for specific guidance
 - Test with `--dry-run` first to preview changes
 
-## Example: Migrating dash-app Modal Component
+## Example: Migrating Modal Component
 
 ```bash
 # 1. Test the Modal component
@@ -194,4 +194,4 @@ git diff src/components/Modal/index.tsx
 npm run dev
 ```
 
-This approach ensures safe, incremental migration of your entire dash-app codebase!
+This approach ensures safe, incremental migration of your entire codebase!
