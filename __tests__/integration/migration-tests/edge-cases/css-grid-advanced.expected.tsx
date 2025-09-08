@@ -1,9 +1,8 @@
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-
+import { cn } from "@/lib/utils";
 const useStyles = makeStyles(() => ({
   gridContainer: {
-    // Advanced Grid properties that may not convert well
     gridTemplate: `
       "header header header" 60px
       "sidebar main main" 1fr
@@ -13,9 +12,8 @@ const useStyles = makeStyles(() => ({
     gridAutoFlow: 'row dense',
     gridAutoRows: 'minmax(100px, auto)',
     gridAutoColumns: 'minmax(150px, 1fr)',
-    placeItems: 'center stretch',
+    placeItems: 'center stretch'
   },
-  
   gridItem: {
     // Grid item specific properties
     gridArea: 'main',
@@ -23,59 +21,39 @@ const useStyles = makeStyles(() => ({
     gridRow: '1 / span 3',
     justifySelf: 'stretch',
     alignSelf: 'center',
-    placeSelf: 'center start',
+    placeSelf: 'center start'
   },
-  
   responsiveGrid: {
-    // Grid with complex responsive behavior
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gridTemplateRows: 'repeat(auto-fill, minmax(200px, 1fr))',
-    
     '@media (max-width: 768px)': {
       gridTemplateColumns: '1fr',
-      gridTemplateRows: 'auto',
+      gridTemplateRows: 'auto'
     },
-    
     '@media (min-width: 1200px)': {
       gridTemplateColumns: 'repeat(4, 1fr)',
-      gridTemplateRows: 'repeat(3, 200px)',
-    },
+      gridTemplateRows: 'repeat(3, 200px)'
+    }
   },
-  
   customProperties: {
     // CSS Custom Properties that should not be converted
     '--primary-color': '#3498db',
     '--secondary-color': '#2ecc71',
     '--grid-gap': '1rem',
-    '--border-radius': '8px',
-    
-    backgroundColor: 'var(--primary-color)',
-    borderRadius: 'var(--border-radius)',
-    gap: 'var(--grid-gap)',
-    
-    // CSS functions
-    width: 'clamp(200px, 50vw, 800px)',
-    height: 'min(400px, 80vh)',
-    fontSize: 'max(16px, 2vw)',
-  },
+    '--border-radius': '8px'
+  }
 }));
-
 export const AdvancedGridComponent: React.FC = () => {
   const classes = useStyles();
-
-  return (
-    <div className={`${classes.gridContainer} grid gap-x-[15px] gap-y-5 content-between justify-around`}>
+  return <div className={cn(classes.gridContainer, "grid gapy-5 gapx-[15px] content-between justify-around")}>
       <header>Header</header>
       <aside>Sidebar</aside>
       <main className={classes.gridItem}>
-        <div className={`${classes.responsiveGrid} grid`}>
-          <div className={classes.customProperties}>Item 1</div>
+        <div className={cn(classes.responsiveGrid, "grid grid-cols-[repeat(auto-fit, minmax(250px, 1fr))] grid-rows-[repeat(auto-fill, minmax(200px, 1fr))]")}>
+          <div className={cn(classes.customProperties, "bg-[var(--primary-color)] rounded-[var(--border-radius)px] gap-[var(--grid-gap)px] w-[clamp(200px, 50vw, 800px)] h-[min(400px, 80vh)] text-[max(16px, 2vw)px]")}>Item 1</div>
           <div>Item 2</div>
           <div>Item 3</div>
           <div>Item 4</div>
         </div>
       </main>
       <footer>Footer</footer>
-    </div>
-  );
+    </div>;
 };
