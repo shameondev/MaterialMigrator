@@ -1,6 +1,6 @@
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-
+import { cn } from "@/lib/utils";
 const useStyles = makeStyles(() => ({
   animatedBox: {
     // These animations cannot be converted to Tailwind
@@ -13,14 +13,12 @@ const useStyles = makeStyles(() => ({
     transformStyle: 'preserve-3d',
     // Advanced filters
     filter: 'drop-shadow(0 0 10px rgba(255, 0, 0, 0.5)) blur(2px) brightness(1.2)',
-    backdropFilter: 'blur(10px) saturate(180%)',
+    backdropFilter: 'blur(10px) saturate(180%)'
   },
   gradientBackground: {
     // Complex gradients that should remain as-is
     background: 'linear-gradient(45deg, #FF6B6B 0%, #4ECDC4 25%, #45B7D1 50%, #96CEB4 75%, #FFEAA7 100%)',
-    backgroundClip: 'text',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text'
   },
   complexPseudo: {
     // These pseudo-selectors and content should not be converted
@@ -31,10 +29,7 @@ const useStyles = makeStyles(() => ({
       left: '50%',
       transform: 'translateX(-50%)',
       fontSize: '20px',
-      color: 'gold',
-    },
-    '&:nth-child(odd)': {
-      backgroundColor: 'rgba(0, 0, 0, 0.05)',
+      color: 'gold'
     },
     '&:hover::after': {
       content: 'attr(data-tooltip)',
@@ -42,25 +37,21 @@ const useStyles = makeStyles(() => ({
       background: 'black',
       color: 'white',
       padding: '4px 8px',
-      borderRadius: '4px',
-    },
-  },
+      borderRadius: '4px'
+    }
+  }
 }));
-
 export const UnconvertibleComponent: React.FC = () => {
   const classes = useStyles();
-
-  return (
-    <div>
+  return <div>
       <div className={classes.animatedBox}>
         Animated Box with Complex Transforms
       </div>
-      <h1 className={classes.gradientBackground}>
+      <h1 className={cn(classes.gradientBackground, "[-webkit-background-clip:text] [-webkit-text-fill-color:transparent]")}>
         Gradient Text
       </h1>
-      <div className={classes.complexPseudo} data-tooltip="Hover me">
+      <div className={cn(classes.complexPseudo, "odd:bg-[rgba(0, 0, 0, 0.05)]")} data-tooltip="Hover me">
         Complex Pseudo Content
       </div>
-    </div>
-  );
+    </div>;
 };
