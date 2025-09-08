@@ -10,7 +10,7 @@ import type { MigrationConfig } from './types.js';
 program
   .name('mttwm')
   .description('MTTWM - Material To Tailwind Migrator: Migrate CSS-in-JS (makeStyles) to Tailwind CSS')
-  .version('1.3.1');
+  .version('1.4.0');
 
 program
   .command('migrate')
@@ -83,54 +83,6 @@ program
     }
   });
 
-program
-  .command('test')
-  .description('Test migration on specific files')
-  .argument('<files...>', 'Test files to process')
-  .option('-v, --verbose', 'Show detailed output', false)
-  .action(async (files, options) => {
-    const config: MigrationConfig = {
-      projectRoot: process.cwd(),
-      writeFiles: false,
-      include: [],
-      exclude: [],
-      dryRun: true,
-      verbose: options.verbose,
-      preserveOriginal: false,
-      useClsx: true,
-      customThemeMapping: {},
-      customPropertyMapping: {},
-      maxWarningsPerFile: 50,
-      failOnErrors: false,
-      generateReport: false,
-    };
 
-    const tool = new MigrationTool(config);
-    await tool.test(files);
-  });
-
-// Run the CLI when executed directly (not when imported in tests)
-// Avoid import.meta in Jest environment to prevent syntax errors
-const isMainModule = (() => {
-  // Check if we're in Jest environment
-  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-    return false;
-  }
-  
-  // Check if we're in Jest (another way)
-  if (typeof global !== 'undefined' && (global as any).it && (global as any).describe) {
-    return false;
-  }
-  
-  try {
-    // Use eval to prevent Jest from parsing import.meta at compile time
-    const importMeta = eval('import.meta');
-    return importMeta.url === `file://${process.argv[1]}`;
-  } catch {
-    return false;
-  }
-})();
-
-if (isMainModule) {
-  program.parse();
-}
+// Always run the CLI - simplified approach
+program.parse();
