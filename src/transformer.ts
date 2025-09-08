@@ -286,9 +286,10 @@ export class CodeTransformer {
         const conversion = conversions.get(styleKey);
         
         // Only consider fully migratable if ALL properties are convertible (no unconvertible properties)
+        // Empty styles (0 properties) are also considered fully migratable since they can be removed
         return conversion && 
-               conversion.tailwindClasses.length > 0 && 
-               conversion.unconvertible.length === 0;
+               conversion.unconvertible.length === 0 &&
+               (conversion.tailwindClasses.length > 0 || Object.keys(conversion.original).length === 0);
       });
     });
   }
@@ -505,15 +506,29 @@ export class CodeTransformer {
             
             if (t.isArrowFunctionExpression(arg) || t.isFunctionExpression(arg)) {
               const body = arg.body;
+              let objExpr: t.ObjectExpression | null = null;
               
               if (t.isObjectExpression(body)) {
+                objExpr = body;
                 // Update the object expression to remove converted properties
-                this.updateStylesObjectExpression(body, extraction, conversions);
+                this.updateStylesObjectExpression(objExpr, extraction, conversions);
               } else if (t.isBlockStatement(body)) {
                 // Handle function body with return statement
                 const returnStatement = body.body.find(stmt => t.isReturnStatement(stmt)) as t.ReturnStatement;
                 if (returnStatement && t.isObjectExpression(returnStatement.argument)) {
-                  this.updateStylesObjectExpression(returnStatement.argument, extraction, conversions);
+                  objExpr = returnStatement.argument;
+                  this.updateStylesObjectExpression(objExpr, extraction, conversions);
+                }
+              }
+              
+              // If all styles were removed, remove the entire makeStyles call
+              if (objExpr && objExpr.properties.length === 0) {
+                // Remove the entire variable declaration
+                if (path.parent && t.isVariableDeclaration(path.parent) && path.parent.declarations.length === 1) {
+                  path.parentPath.remove();
+                } else {
+                  // Remove just this declaration if there are multiple in the statement
+                  path.remove();
                 }
               }
             }
@@ -554,6 +569,9 @@ export class CodeTransformer {
             return true; // Keep the style object
           } else if (conversion && conversion.tailwindClasses.length > 0) {
             // Remove fully converted styles
+            return false;
+          } else if (conversion && conversion.tailwindClasses.length === 0 && conversion.unconvertible.length === 0) {
+            // Remove empty styles (no properties to convert)
             return false;
           }
         }
