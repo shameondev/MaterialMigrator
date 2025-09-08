@@ -19,6 +19,26 @@ export class ThemeMapper {
   public resolveThemeReference(themeRef: ThemeReference, cssProperty: string): string[] {
     const path = themeRef.path.join('.');
     
+    // Handle optional chaining with helpful error messages
+    if (themeRef.isOptional) {
+      throw new Error(
+        `❌ Optional chaining in theme reference: theme.${path}?.
+        
+🔧 To fix this:
+1. Add to customThemeMapping in your migration config:
+   customThemeMapping: {
+     'theme.${path}': 'your-tailwind-class-here'
+   }
+
+2. Or ensure the theme property is defined without optional chaining.
+3. Common examples:
+   - theme.custom?.main → 'text-blue-600' 
+   - theme.palette?.primary?.main → 'text-primary'
+   
+📖 See documentation for more theme mapping examples.`
+      );
+    }
+    
     // Handle custom theme properties
     if (themeRef.path[0] === 'custom') {
       return this.resolveCustomTheme(themeRef.path.slice(1), cssProperty);

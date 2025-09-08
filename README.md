@@ -1,4 +1,4 @@
-# MaterialMigrator
+# Material To TailWind Migrator
 
 [![npm version](https://badge.fury.io/js/mttwm.svg)](https://badge.fury.io/js/mttwm)
 [![npm downloads](https://img.shields.io/npm/dm/mttwm.svg)](https://www.npmjs.com/package/mttwm)
@@ -158,32 +158,82 @@ The project includes comprehensive test files covering various scenarios:
 
 ## 🔧 Configuration
 
-### Custom Theme Mapping
+### Current CLI Usage
 
-Extend the theme mapping in your migration config:
+The CLI currently has built-in theme mappings for common Material-UI patterns. For custom theme properties, you have these options:
 
-```typescript
-const config: MigrationConfig = {
+### Option 1: Use Built-in Mappings (Recommended)
+The tool automatically handles:
+```bash
+npx mttwm migrate src/**/*.tsx --dry-run
+```
+
+**Built-in conversions:**
+- `theme.palette.primary.main` → CSS variables
+- `theme.spacing(n)` → Tailwind spacing classes
+- `theme.breakpoints.up("md")` → responsive prefixes
+- `theme.custom.*` → CSS variables
+
+### Option 2: Programmatic Usage with Custom Config
+
+For advanced customization, use the tool programmatically:
+
+```javascript
+// migrate-script.js
+import { MigrationTool } from 'mttwm';
+
+const config = {
+  projectRoot: process.cwd(),
+  writeFiles: false, // dry run
+  include: ['src/**/*.tsx'],
+  exclude: ['node_modules/**'],
   customThemeMapping: {
     'theme.custom.primaryColor': 'text-blue-600',
+    'theme.custom.main': 'text-primary',
     'theme.custom.spacing.large': 'p-8',
+    'theme.palette.primary.main': 'text-blue-500',
   },
-  // ... other options
-};
-```
-
-### Custom Property Mapping
-
-Map specific CSS properties to custom Tailwind classes:
-
-```typescript
-const config: MigrationConfig = {
   customPropertyMapping: {
-    'boxShadow': (value: string) => `shadow-custom-${value}`,
-  },
-  // ... other options
+    'boxShadow': (value) => `shadow-custom-${value}`,
+  }
 };
+
+const tool = new MigrationTool(config);
+const files = ['src/components/Button.tsx'];
+await tool.test(files); // or tool.migrate(files)
 ```
+
+```bash
+node migrate-script.js
+```
+
+### Handling Theme Issues
+
+#### Optional Chaining Errors
+If you get errors like:
+```
+❌ Optional chaining in theme reference: theme.custom?.main
+```
+
+**Quick Fix:** Remove the optional chaining from your code:
+```tsx
+// ❌ Change this:
+color: theme.custom?.main
+
+// ✅ To this:
+color: theme.custom.main
+```
+
+**Advanced Fix:** Use programmatic API with custom mapping (see Option 2 above)
+
+#### Custom Theme Properties
+For `theme.custom.*` or `theme.yourCustom.*` properties:
+
+1. **Built-in behavior**: Converts to CSS variables
+   - `theme.custom.main` → `text-[var(--main)]`
+   - `theme.superCustom.bg` → `var(--theme-superCustom-bg)`
+
+2. **For specific Tailwind classes**: Use programmatic API with `customThemeMapping`
 
 ## 📊 Migration Reports
 

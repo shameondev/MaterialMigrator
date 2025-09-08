@@ -38,6 +38,7 @@ export interface ThemeReference {
   type: 'theme';
   path: string[];
   fallback?: CSSValue;
+  isOptional?: boolean;
 }
 
 export interface ThemeSpacingValue {

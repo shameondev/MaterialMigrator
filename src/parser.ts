@@ -237,13 +237,15 @@ export class ASTParser {
       return `\${template-literal}`;
     }
 
-    // Member expressions (theme.custom.color)
-    if (t.isMemberExpression(node)) {
-      const path = this.getMemberExpressionPath(node);
+    // Member expressions (theme.custom.color) and optional chaining (theme.custom?.color)
+    if (t.isMemberExpression(node) || t.isOptionalMemberExpression(node)) {
+      const path = this.getMemberExpressionPath(node as t.MemberExpression);
       if (path.length > 0 && path[0] === 'theme') {
+        const isOptional = t.isOptionalMemberExpression(node);
         return {
           type: 'theme',
           path: path.slice(1),
+          isOptional,
         } as ThemeReference;
       }
       return path.join('.');
@@ -323,11 +325,11 @@ export class ASTParser {
     return `{${node.type}}`;
   }
 
-  private getMemberExpressionPath(node: t.MemberExpression): string[] {
+  private getMemberExpressionPath(node: t.MemberExpression | t.OptionalMemberExpression): string[] {
     const path: string[] = [];
 
     let current: t.Node = node;
-    while (t.isMemberExpression(current)) {
+    while (t.isMemberExpression(current) || t.isOptionalMemberExpression(current)) {
       if (t.isIdentifier(current.property)) {
         path.unshift(current.property.name);
       } else if (t.isStringLiteral(current.property)) {
