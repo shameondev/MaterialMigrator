@@ -7,5 +7,5 @@ export const ColorsComponent = () => {
         </div>
         <button className="bg-[#1976d2] text-white rounded-lg border-0 cursor-pointer">Click me</button>
       </div>
-    </div>
+    </div>;
 };
