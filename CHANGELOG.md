@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-09-09
+
+### 🎯 **MAJOR FEATURES**
+- **Config-based theme mapping with mttwm.config.js support** - Now supports automatic config file loading from project root
+- **Enhanced optional chaining handling** - Both `theme.custom?.X` and `theme.custom.X` now work seamlessly with config mappings
+- **User-friendly error messages** - Clear guidance on creating config files with practical examples
+- **Streamlined npx workflow** - Zero-setup configuration for npx users with helpful error recovery
+
+### Added
+- **mttwm.config.js automatic loading** - CLI automatically loads config from project root
+- **customThemeMapping support** - Map any theme property to specific Tailwind classes
+- **Enhanced error messages** - Step-by-step guidance with real-world examples
+- **Both syntaxes supported** - Optional chaining and regular member expressions work identically
+
+### Changed
+- **Config-first approach** - Unknown theme properties now require explicit config mapping
+- **Improved user experience** - Error messages focus on practical solutions over programmatic API
+- **Better documentation** - Updated README with comprehensive config file examples
+
+### Technical Details
+- Enhanced ThemeMapper to prioritize customThemeMapping over built-in fallbacks
+- Updated CLI to pass config structure correctly to StyleConverter
+- Improved parser to handle OptionalMemberExpression and MemberExpression uniformly
+- Added comprehensive test coverage for config-based workflows
+
+### Migration Guide
+- **For existing users**: No breaking changes to built-in theme properties (`theme.palette.*`, `theme.spacing.*`)
+- **For custom properties**: Create `mttwm.config.js` in project root with `customThemeMapping`
+- **Error handling**: Follow new error messages for step-by-step config setup
+
 ## [1.4.0] - 2025-09-08
 
 ### BREAKING CHANGES
