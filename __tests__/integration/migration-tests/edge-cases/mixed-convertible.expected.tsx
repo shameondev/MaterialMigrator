@@ -21,7 +21,7 @@ const useStyles = makeStyles(theme => ({
 }));
 export const MixedStylesComponent: React.FC = () => {
   const classes = useStyles();
-  return <div className={cn(classes.card, "flex flex-col p-6 m-4 var(--palette-background-paper) var(--theme-shape-borderRadius) hover:transition-all")}>
+  return <div className={cn(classes.card, "flex flex-col p-6 m-4 bg-[var(--palette-background-paper)] rounded-[var(--theme-shape-borderRadius)] hover:transition-all")}>
       <div className="title">Card Title</div>
       <p>Some convertible styles like flex and padding should become Tailwind classes.</p>
       <p>But complex gradients, transforms, and pseudo-selectors should remain in makeStyles.</p>

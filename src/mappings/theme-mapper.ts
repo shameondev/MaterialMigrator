@@ -1,4 +1,5 @@
 import type { ThemeReference, CSSValue, ThemeMapping } from '../types.js';
+import { CSS_TO_TAILWIND_MAP } from './css-to-tailwind.js';
 
 /**
  * Maps theme references to Tailwind classes or CSS variables
@@ -24,7 +25,10 @@ export class ThemeMapper {
     const customMapping = this.themeMapping.customThemeMapping;
     if (customMapping && customMapping[fullThemePath]) {
       const mappedValue = customMapping[fullThemePath];
-      return Array.isArray(mappedValue) ? mappedValue : [mappedValue];
+      const baseValue = Array.isArray(mappedValue) ? mappedValue[0] : mappedValue;
+      
+      // Apply property-aware Tailwind class conversion for custom mappings
+      return this.convertValueToTailwindClass(baseValue, cssProperty);
     }
     
     // Handle custom theme properties - try built-in mappings first
@@ -105,8 +109,9 @@ npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
       return this.resolveSpacing(themeRef.path.slice(1), cssProperty);
     }
 
-    // Fallback: use CSS variable
-    return [`var(--theme-${path.replace(/\./g, '-')})`];
+    // Fallback: use CSS variable with appropriate Tailwind prefix
+    const cssVar = `var(--theme-${path.replace(/\./g, '-')})`;
+    return this.convertValueToTailwindClass(cssVar, cssProperty);
   }
 
   private resolveCustomTheme(path: string[], cssProperty: string): string[] {
@@ -239,8 +244,9 @@ npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
       if (cssProperty === 'borderColor') return ['border-secondary'];
     }
 
-    // Fallback
-    return [`var(--palette-${category}-${shade})`];
+    // Fallback - use CSS variable with appropriate Tailwind prefix
+    const cssVar = `var(--palette-${category}-${shade})`;
+    return this.convertValueToTailwindClass(cssVar, cssProperty);
   }
 
   private resolveSpacing(path: string[], cssProperty: string): string[] {
@@ -263,7 +269,64 @@ npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
     if (cssProperty === 'margin') return [`m-${tailwindValue}`];
     if (cssProperty === 'gap') return [`gap-${tailwindValue}`];
 
-    return [`var(--spacing-${spacingValue})`];
+    // Fallback - use CSS variable with appropriate Tailwind prefix  
+    const cssVar = `var(--spacing-${spacingValue})`;
+    return this.convertValueToTailwindClass(cssVar, cssProperty);
+  }
+
+  /**
+   * Convert a custom mapped value to the appropriate Tailwind class based on CSS property
+   */
+  private convertValueToTailwindClass(value: string, cssProperty: string): string[] {
+    // If the value already contains a Tailwind prefix, return as-is
+    if (this.hasTailwindPrefix(value)) {
+      return [value];
+    }
+    
+    // Use existing CSS-to-Tailwind conversion logic if available
+    const converter = CSS_TO_TAILWIND_MAP[cssProperty];
+    if (converter) {
+      const result = converter(value);
+      // If the converter returns empty array, fall back to manual prefix
+      if (result.length > 0) {
+        return result;
+      }
+    }
+    
+    // Fallback: apply property-specific Tailwind prefix manually
+    const propertyPrefixes: Record<string, string> = {
+      'color': 'text',
+      'backgroundColor': 'bg',
+      'borderColor': 'border',
+      'borderTopColor': 'border-t',
+      'borderRightColor': 'border-r',
+      'borderBottomColor': 'border-b',
+      'borderLeftColor': 'border-l',
+      'fill': 'fill',
+      'stroke': 'stroke',
+    };
+    
+    const prefix = propertyPrefixes[cssProperty];
+    if (prefix) {
+      return [`${prefix}-${value}`];
+    }
+    
+    // For unmapped properties, return the value as-is
+    return [value];
+  }
+  
+  /**
+   * Check if a value already has a Tailwind prefix
+   */
+  private hasTailwindPrefix(value: string): boolean {
+    const tailwindPrefixes = [
+      'text-', 'bg-', 'border-', 'border-t-', 'border-r-', 'border-b-', 'border-l-',
+      'fill-', 'stroke-', 'p-', 'm-', 'px-', 'py-', 'pt-', 'pr-', 'pb-', 'pl-',
+      'mx-', 'my-', 'mt-', 'mr-', 'mb-', 'ml-', 'w-', 'h-', 'rounded-', 'shadow-',
+      'font-', 'leading-', 'tracking-', 'opacity-', 'z-', 'gap-'
+    ];
+    
+    return tailwindPrefixes.some(prefix => value.startsWith(prefix));
   }
 
   /**

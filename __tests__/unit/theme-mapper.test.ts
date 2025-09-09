@@ -118,7 +118,7 @@ describe('ThemeMapper', () => {
         };
         
         const result = themeMapper.resolveThemeReference(themeRef, 'backgroundColor');
-        expect(result).toEqual(['var(--palette-tertiary-light)']);
+        expect(result).toEqual(['bg-[var(--palette-tertiary-light)]']);
       });
     });
 
@@ -170,7 +170,7 @@ describe('ThemeMapper', () => {
         };
         
         const result = themeMapper.resolveThemeReference(themeRef, 'width');
-        expect(result).toEqual(['var(--spacing-md)']);
+        expect(result).toEqual(['w-[var(--spacing-md)px]']);
       });
     });
 
@@ -194,7 +194,7 @@ describe('ThemeMapper', () => {
         };
         
         const result = themeMapper.resolveThemeReference(themeRef, 'color');
-        expect(result).toEqual(['var(--theme-unknown-property-path)']);
+        expect(result).toEqual(['text-[var(--theme-unknown-property-path)]']);
       });
 
       it('should handle dots in theme paths correctly', () => {
@@ -204,7 +204,7 @@ describe('ThemeMapper', () => {
         };
         
         const result = themeMapper.resolveThemeReference(themeRef, 'color');
-        expect(result).toEqual(['var(--theme-theme-deeply-nested-property)']);
+        expect(result).toEqual(['text-[var(--theme-theme-deeply-nested-property)]']);
       });
     });
   });
@@ -439,7 +439,7 @@ describe('ThemeMapper', () => {
       };
       
       const result = themeMapper.resolveThemeReference(themeRef, 'color');
-      expect(result).toEqual(['var(--theme-)']);
+      expect(result).toEqual(['text-[var(--theme-)]']);
     });
 
     it('should throw error for single-element custom paths', () => {
@@ -471,7 +471,7 @@ describe('ThemeMapper', () => {
       };
       
       const result = themeMapper.resolveThemeReference(themeRef, 'backgroundColor');
-      expect(result).toEqual(['var(--palette-primary-undefined)']);
+      expect(result).toEqual(['bg-[var(--palette-primary-undefined)]']);
     });
 
     it('should handle empty spacing path', () => {
@@ -547,7 +547,60 @@ describe('ThemeMapper', () => {
           path: ['custom', 'primary']
         };
         const result2 = mapper.resolveThemeReference(themeRef2, 'backgroundColor');
-        expect(result2).toEqual(['bg-red-500', 'text-white']);
+        expect(result2).toEqual(['bg-red-500']);
+      });
+      
+      it('should apply property-aware prefixes for custom mappings', () => {
+        const customMapping = {
+          customThemeMapping: {
+            'theme.custom.main': 'main'
+          }
+        };
+        
+        const mapper = new ThemeMapper(customMapping);
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'main']
+        };
+        
+        // Test color property gets text- prefix (CSS-to-Tailwind uses arbitrary values for unknown colors)
+        const colorResult = mapper.resolveThemeReference(themeRef, 'color');
+        expect(colorResult).toEqual(['text-[main]']);
+        
+        // Test backgroundColor property gets bg- prefix
+        const bgResult = mapper.resolveThemeReference(themeRef, 'backgroundColor');
+        expect(bgResult).toEqual(['bg-[main]']);
+        
+        // Test borderColor property gets border- prefix
+        const borderResult = mapper.resolveThemeReference(themeRef, 'borderColor');
+        expect(borderResult).toEqual(['border-[main]']);
+      });
+      
+      it('should preserve existing Tailwind prefixes in custom mappings', () => {
+        const customMapping = {
+          customThemeMapping: {
+            'theme.custom.primary': 'bg-blue-500',
+            'theme.custom.secondary': 'text-gray-600'
+          }
+        };
+        
+        const mapper = new ThemeMapper(customMapping);
+        
+        // Test that bg-blue-500 is preserved as-is for any property
+        const themeRef1: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'primary']
+        };
+        const result1 = mapper.resolveThemeReference(themeRef1, 'color');
+        expect(result1).toEqual(['bg-blue-500']);
+        
+        // Test that text-gray-600 is preserved as-is for any property
+        const themeRef2: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'secondary']
+        };
+        const result2 = mapper.resolveThemeReference(themeRef2, 'backgroundColor');
+        expect(result2).toEqual(['text-gray-600']);
       });
 
       it('should use customThemeMapping for theme.superCustom properties', () => {

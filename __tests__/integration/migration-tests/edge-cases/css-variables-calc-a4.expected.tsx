@@ -26,7 +26,7 @@ export const CSSVariablesCalcComponent: React.FC = () => {
         </div>
       </div>
       
-      <div className="pt-[env(safe-area-inset-top)px] pl-[env(safe-area-inset-left)px] pr-[env(safe-area-inset-right)px] pb-[env(safe-area-inset-bottom)px] min-h-[calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom))] var(--palette-background-default)">
+      <div className="pt-[env(safe-area-inset-top)px] pl-[env(safe-area-inset-left)px] pr-[env(safe-area-inset-right)px] pb-[env(safe-area-inset-bottom)px] min-h-[calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom))] bg-[var(--palette-background-default)]">
         Safe area adapted content
       </div>
       
