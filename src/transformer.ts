@@ -81,14 +81,12 @@ export class CodeTransformer {
       // 4. Add cn() utility for dynamic classes if needed
       this.addClsxImportIfNeeded(classNameReplacements);
 
-      // Generate the transformed code - if no changes were made, return original
-      const migratedCode = fullyMigratableExtractions.length > 0 || classNameReplacements.size > 0
-        ? generateFn(this.ast, {
-            retainLines: false,
-            compact: false,
-            concise: false,
-          }).code
-        : this.sourceCode;
+      // Generate the transformed code - always generate to count remaining classes properly
+      const migratedCode = generateFn(this.ast, {
+        retainLines: false,
+        compact: false,
+        concise: false,
+      }).code;
 
       // Collect warnings from conversions
       for (const conversion of conversions.values()) {
@@ -122,6 +120,7 @@ export class CodeTransformer {
           convertedStyles,
           unconvertibleStyles,
           classNameReplacements: classNameReplacements.size,
+          remainingClassesUsages: this.countRemainingClassesUsages(migratedCode),
         }
       };
 
@@ -145,6 +144,7 @@ export class CodeTransformer {
           convertedStyles: 0,
           unconvertibleStyles: 0,
           classNameReplacements: 0,
+          remainingClassesUsages: 0,
         }
       };
     }
@@ -244,6 +244,7 @@ export class CodeTransformer {
           convertedStyles,
           unconvertibleStyles,
           classNameReplacements: classNameReplacements.size,
+          remainingClassesUsages: this.countRemainingClassesUsages(migratedCode),
         }
       };
 
@@ -267,6 +268,7 @@ export class CodeTransformer {
           convertedStyles: 0,
           unconvertibleStyles: 0,
           classNameReplacements: 0,
+          remainingClassesUsages: 0,
         }
       };
     }
@@ -1047,5 +1049,16 @@ export class CodeTransformer {
     }
 
     return preview.join('\n');
+  }
+
+  /**
+   * Count remaining classes.x usages in the migrated code
+   */
+  private countRemainingClassesUsages(code: string): number {
+    // Use regex to find classes.property or classes?.property patterns
+    // Fixed: removed double escaping (was \\., should be \.)
+    const classesUsageRegex = /classes\.\w+|classes\?\.\w+/g;
+    const matches = code.match(classesUsageRegex);
+    return matches ? matches.length : 0;
   }
 }

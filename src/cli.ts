@@ -112,14 +112,38 @@ program
     } else {
       const results = await tool.migrate(filesToMigrate);
       
-      // Show summary
-      const successful = results.filter(r => r.success);
-      const failed = results.filter(r => !r.success);
+      // Show summary with detailed status
+      const complete = results.filter(r => r.migrationStatus === 'complete');
+      const partial = results.filter(r => r.migrationStatus === 'partial');
+      const failed = results.filter(r => r.migrationStatus === 'failed');
+      const skipped = results.filter(r => r.migrationStatus === 'skipped');
       
       console.log(chalk.blue('\n📊 Migration Summary:'));
-      console.log(chalk.green(`✅ Successfully migrated: ${successful.length} files`));
+      console.log(chalk.green(`✅ Fully migrated: ${complete.length} files`));
+      if (partial.length > 0) {
+        console.log(chalk.yellow(`🔄 Partially migrated: ${partial.length} files`));
+      }
       if (failed.length > 0) {
         console.log(chalk.red(`❌ Failed to migrate: ${failed.length} files`));
+      }
+      if (skipped.length > 0) {
+        console.log(chalk.gray(`⏭️  Skipped (no styles): ${skipped.length} files`));
+      }
+
+      // Show details for files that need attention
+      if (failed.length > 0) {
+        console.log(chalk.red('\nFailed files:'));
+        failed.forEach(r => {
+          console.log(chalk.red(`- ${r.filePath}: ${r.error || 'No styles migrated, all classes.x remain'}`));
+        });
+      }
+
+      if (partial.length > 0) {
+        console.log(chalk.yellow('\nPartially migrated files (manual review required):'));
+        partial.forEach(r => {
+          const remaining = r.stats.remainingClassesUsages;
+          console.log(chalk.yellow(`- ${r.filePath}: ${remaining} classes.x usages remain`));
+        });
       }
     }
   });

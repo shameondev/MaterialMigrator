@@ -30,6 +30,7 @@ export class MigrationTool {
         results.push({
           filePath,
           success: false,
+          migrationStatus: 'failed',
           error: error instanceof Error ? error.message : 'Unknown error',
           originalCode: '',
           migratedCode: '',
@@ -41,6 +42,7 @@ export class MigrationTool {
             convertedStyles: 0,
             unconvertibleStyles: 0,
             classNameReplacements: 0,
+            remainingClassesUsages: 0,
           }
         });
       }
@@ -67,6 +69,7 @@ export class MigrationTool {
         return {
           filePath,
           success: true,
+          migrationStatus: 'skipped',
           originalCode,
           migratedCode: originalCode,
           conversions: [],
@@ -77,6 +80,7 @@ export class MigrationTool {
             convertedStyles: 0,
             unconvertibleStyles: 0,
             classNameReplacements: 0,
+            remainingClassesUsages: 0,
           }
         };
       }
@@ -126,9 +130,18 @@ export class MigrationTool {
         await writeFile(fullPath, transformResult.migratedCode, 'utf-8');
       }
 
+      // Determine migration status based on actual results
+      const migrationStatus = this.determineMigrationStatus(
+        originalCode,
+        transformResult.migratedCode,
+        transformResult.stats,
+        transformResult.classNameReplacements
+      );
+
       return {
         filePath,
-        success: true,
+        success: migrationStatus !== 'failed',
+        migrationStatus,
         originalCode,
         migratedCode: transformResult.migratedCode,
         conversions: transformResult.conversions,
@@ -143,6 +156,7 @@ export class MigrationTool {
       return {
         filePath,
         success: false,
+        migrationStatus: 'failed',
         error: error instanceof Error ? error.message : 'Unknown error',
         originalCode,
         migratedCode: originalCode,
@@ -154,6 +168,7 @@ export class MigrationTool {
           convertedStyles: 0,
           unconvertibleStyles: 0,
           classNameReplacements: 0,
+          remainingClassesUsages: 0,
         }
       };
     }
@@ -185,24 +200,85 @@ export class MigrationTool {
     console.log('🧪 Testing migration on files (dry run)...\n');
     
     const results = await this.migrate(files);
-    const successful = results.filter(r => r.success);
-    const failed = results.filter(r => !r.success);
     
-    console.log(`✅ Successfully processed: ${successful.length} files`);
-    console.log(`❌ Failed to process: ${failed.length} files\n`);
+    // Categorize results by migration status
+    const complete = results.filter(r => r.migrationStatus === 'complete');
+    const partial = results.filter(r => r.migrationStatus === 'partial');
+    const failed = results.filter(r => r.migrationStatus === 'failed');
+    const skipped = results.filter(r => r.migrationStatus === 'skipped');
+    
+    console.log('📊 Migration Summary:');
+    console.log(`✅ Fully migrated: ${complete.length} files`);
+    console.log(`🔄 Partially migrated: ${partial.length} files`);
+    console.log(`❌ Failed to migrate: ${failed.length} files`);
+    console.log(`⏭️  Skipped (no styles): ${skipped.length} files\n`);
     
     if (failed.length > 0) {
       console.log('Failed files:');
       failed.forEach(r => {
-        console.log(`- ${r.filePath}: ${r.error}`);
+        console.log(`- ${r.filePath}: ${r.error || 'No styles migrated, all classes.x remain'}`);
+      });
+      console.log();
+    }
+
+    if (partial.length > 0) {
+      console.log('Partially migrated files (manual review required):');
+      partial.forEach(r => {
+        const remaining = r.stats.remainingClassesUsages;
+        console.log(`- ${r.filePath}: ${remaining} classes.x usages remain`);
       });
       console.log();
     }
     
     // Show preview of changes
-    if (successful.length > 0) {
+    if (complete.length > 0 || partial.length > 0) {
       console.log('Preview of changes:');
-      console.log(this.generatePreview(successful));
+      console.log(this.generatePreview([...complete, ...partial]));
     }
+  }
+
+  /**
+   * Determine migration status based on actual migration results
+   */
+  private determineMigrationStatus(
+    originalCode: string,
+    migratedCode: string,
+    stats: {
+      totalStyles: number;
+      convertedStyles: number;
+      unconvertibleStyles: number;
+      classNameReplacements: number;
+      remainingClassesUsages: number;
+    },
+    classNameReplacements: Map<string, string>
+  ): 'complete' | 'partial' | 'failed' | 'skipped' {
+    // If no styles found at all, it's skipped
+    if (stats.totalStyles === 0) {
+      return 'skipped';
+    }
+
+    // Check if there are any remaining classes.x usages
+    const hasRemainingClasses = stats.remainingClassesUsages > 0;
+    const hasCnUsage = Array.from(classNameReplacements.values()).some(replacement => 
+      replacement.includes('cn(')
+    );
+
+    // Complete migration: All classes.x are gone and no cn() usage
+    if (!hasRemainingClasses && !hasCnUsage) {
+      return 'complete';
+    }
+
+    // Partial migration: Some classes.x converted (cn() added or some replacements made) 
+    if (stats.classNameReplacements > 0 || hasCnUsage) {
+      return 'partial';
+    }
+
+    // Failed migration: All classes.x remain and no cn() added
+    if (hasRemainingClasses && !hasCnUsage && stats.classNameReplacements === 0) {
+      return 'failed';
+    }
+
+    // Default case - partial if there's any change at all
+    return migratedCode !== originalCode ? 'partial' : 'failed';
   }
 }

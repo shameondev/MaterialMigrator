@@ -105,6 +105,7 @@ export interface UnconvertibleStyle {
 export interface MigrationResult {
   filePath: string;
   success: boolean;
+  migrationStatus: 'complete' | 'partial' | 'failed' | 'skipped';
   error?: string;
   originalCode: string;
   migratedCode: string;
@@ -118,6 +119,7 @@ export interface MigrationResult {
     convertedStyles: number;
     unconvertibleStyles: number;
     classNameReplacements: number;
+    remainingClassesUsages: number;
   };
 }
 
@@ -216,6 +218,7 @@ export interface TransformResult {
     convertedStyles: number;
     unconvertibleStyles: number;
     classNameReplacements: number;
+    remainingClassesUsages: number;
   };
 }
 
