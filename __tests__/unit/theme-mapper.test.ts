@@ -257,7 +257,7 @@ describe('ThemeMapper', () => {
       };
       
       expect(() => themeMapper.resolveThemeReference(themeRef, 'backgroundColor')).toThrow(
-        expect.stringContaining('❌ Unknown theme property: theme.custom.unmappedBackgroundColor')
+        /Unknown theme property.*theme\.custom\.unmappedBackgroundColor/
       );
     });
   });
@@ -362,7 +362,7 @@ describe('ThemeMapper', () => {
       };
       
       expect(() => themeMapper.resolveThemeReference(themeRef, 'borderRadius')).toThrow(
-        expect.stringContaining('❌ Unknown theme property: theme.custom.customRadius')
+        /Unknown theme property.*theme\.custom\.customRadius/
       );
     });
   });
@@ -449,7 +449,7 @@ describe('ThemeMapper', () => {
       };
       
       expect(() => themeMapper.resolveThemeReference(themeRef, 'color')).toThrow(
-        expect.stringContaining('❌ Unknown theme property: theme.custom')
+        /Unknown theme property.*theme\.custom/
       );
     });
 
@@ -460,7 +460,7 @@ describe('ThemeMapper', () => {
       };
       
       expect(() => themeMapper.resolveThemeReference(themeRef, 'unknownProperty')).toThrow(
-        expect.stringContaining('❌ Unknown theme property: theme.custom.someProperty')
+        /Unknown theme property.*theme\.custom\.someProperty/
       );
     });
 
@@ -579,13 +579,13 @@ describe('ThemeMapper', () => {
         };
         
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('❌ Unknown theme property: theme.custom.unknownProperty')
+          /Unknown theme property.*theme\.custom\.unknownProperty/
         );
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('customThemeMapping')
+          /customThemeMapping/
         );
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('migrate-script.js')
+          /mttwm\.config\.js/
         );
       });
 
@@ -599,10 +599,10 @@ describe('ThemeMapper', () => {
         };
         
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('❌ Unknown theme property: theme.custom.secondary?')
+          /Unknown theme property.*theme\.custom\.secondary\?/
         );
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('For CLI usage, create a migration script:')
+          /Create a config file to map this property/
         );
       });
 
@@ -616,10 +616,10 @@ describe('ThemeMapper', () => {
         };
         
         expect(() => mapper.resolveThemeReference(themeRef, 'backgroundColor')).toThrow(
-          expect.stringContaining('❌ Unknown theme property: theme.superCustom.bg')
+          /Unknown theme property.*theme\.superCustom\.bg/
         );
         expect(() => mapper.resolveThemeReference(themeRef, 'backgroundColor')).toThrow(
-          expect.stringContaining('\'theme.superCustom.bg\': \'your-tailwind-class-here\'')
+          /theme\.superCustom\.bg.*your-tailwind-class-here/
         );
       });
 
@@ -633,13 +633,13 @@ describe('ThemeMapper', () => {
         };
         
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('\'theme.custom.main\': \'bg-blue-500\' (background color)')
+          /theme\.custom\.main.*bg-blue-500.*background color/
         );
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('\'theme.custom.main\': \'text-gray-800\' (text color)')
+          /theme\.custom\.main.*text-gray-800.*text color/
         );
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('\'theme.custom.main\': \'border-red-400\' (border color)')
+          /theme\.custom\.main.*border-red-400.*border color/
         );
       });
 
@@ -653,7 +653,7 @@ describe('ThemeMapper', () => {
         };
         
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('📖 See README.md for more configuration examples.')
+          /See README\.md for more configuration examples/
         );
       });
     });

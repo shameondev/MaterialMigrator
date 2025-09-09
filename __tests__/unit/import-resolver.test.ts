@@ -135,6 +135,7 @@ describe('ImportResolver', () => {
       expect(result![0].styles[0].properties.backgroundColor).toEqual({
         type: 'theme',
         path: ['palette', 'primary', 'main'],
+        isOptional: false,
       });
       expect(result![0].styles[1].properties.fontSize).toBe('1.5rem');
     });
