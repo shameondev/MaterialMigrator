@@ -21,7 +21,35 @@ Transform your React applications from Material-UI `makeStyles`/`useStyles` to T
 
 ## 🚀 Quick Start
 
-### Installation
+### Step-by-Step Migration
+
+#### 1. Test your migration
+```bash
+# Preview changes without modifying files
+npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
+```
+
+#### 2. Handle custom theme properties
+If you see errors for unknown theme properties, create a config file:
+
+```javascript
+// mttwm.config.js (create in your project root)
+export default {
+  customThemeMapping: {
+    'theme.custom.primary': 'bg-blue-500',
+    'theme.custom.secondary': 'text-gray-600',
+    // Add more mappings as needed
+  }
+};
+```
+
+#### 3. Apply the migration
+```bash
+# Apply the actual migration
+npx mttwm migrate --pattern "src/**/*.tsx"
+```
+
+### Installation Options
 
 #### Quick Start (Recommended)
 ```bash
@@ -239,45 +267,73 @@ await tool.test(files); // or tool.migrate(files)
 node migrate-script.js
 ```
 
-### Handling Theme Issues
+### 🔧 Handling Theme Issues
 
-#### Unknown Theme Properties
-When the migration tool encounters unknown theme properties, it will show helpful errors:
+#### Config File Workflow (Recommended)
 
+**Step 1: Run migration with --dry-run**
+```bash
+npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
+```
+
+**Step 2: Create mttwm.config.js for unknown properties**
+When you see errors like this:
 ```
 ❌ Unknown theme property: theme.custom.secondary
 
-🔧 To fix this, add mapping to your migration config:
+🔧 Create a config file to map this property:
 
-For CLI usage, create a mttwm.config.js file:
+1. Create mttwm.config.js in your project root:
 // mttwm.config.js
 export default {
   customThemeMapping: {
-    'theme.custom.secondary': 'text-blue-600'
+    'theme.custom.secondary': 'your-tailwind-class-here'
   }
 };
 
-📝 Common examples:
-  - 'theme.custom.secondary': 'text-blue-600'
-  - 'theme.custom.secondary': 'bg-gray-100' 
-  - 'theme.custom.secondary': 'border-red-500'
+2. Run the migration again:
+npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
 ```
 
-#### Both Syntaxes Supported
+Create the config file with your mappings:
+```javascript
+// mttwm.config.js
+export default {
+  customThemeMapping: {
+    // Background colors
+    'theme.custom.primary': 'bg-blue-500',
+    'theme.custom.secondary': 'bg-gray-100',
+    'theme.superCustom.background': 'bg-white',
+    
+    // Text colors
+    'theme.custom.textPrimary': 'text-gray-900',
+    'theme.custom.textSecondary': 'text-gray-600',
+    
+    // Border styles
+    'theme.custom.borderColor': 'border-gray-300',
+    'theme.custom.borderRadius': 'rounded-lg',
+    
+    // Spacing (if needed)
+    'theme.custom.spacing': 'p-4',
+  },
+  verbose: true
+};
+```
+
+**Step 3: Apply the migration**
+```bash
+npx mttwm migrate --pattern "src/**/*.tsx"
+```
+
+#### Both Syntaxes Supported ✅
 The tool handles both optional chaining and regular syntax:
-- `theme.custom?.main` ✅ (requires config mapping)
-- `theme.custom.main` ✅ (requires config mapping)
-- Both will use the same `'theme.custom.main': 'your-class'` mapping
+- `theme.custom?.main` → requires config mapping
+- `theme.custom.main` → requires config mapping  
+- Both use the same `'theme.custom.main': 'bg-blue-500'` mapping
 
-#### Migration Workflow
-1. **Run migration** with `--dry-run` first
-2. **Add missing mappings** to `mttwm.config.js` as errors appear
-3. **Re-run migration** until all theme properties are mapped
-4. **Apply changes** by removing `--dry-run` flag
-
-#### Built-in vs Custom Properties
-- **Built-in properties**: `theme.palette.*`, `theme.spacing.*` → work automatically
-- **Custom properties**: `theme.custom.*`, `theme.superCustom.*` → require config mapping
+#### Property Types Guide
+- **✅ Built-in properties**: `theme.palette.*`, `theme.spacing.*`, `theme.breakpoints.*` → work automatically
+- **⚙️ Custom properties**: `theme.custom.*`, `theme.superCustom.*` → require config mapping in mttwm.config.js
 
 ## 📊 Migration Reports
 

@@ -37,27 +37,26 @@ export class ThemeMapper {
         throw new Error(
           `❌ Unknown theme property: ${fullThemePath}${optionalIndicator}
 
-🔧 To fix this, add mapping to your migration config:
+🔧 Create a config file to map this property:
 
-For CLI usage, create a migration script:
-// migrate-script.js
-import { MigrationTool } from 'mttwm';
-
-const config = {
+1. Create mttwm.config.js in your project root:
+// mttwm.config.js
+export default {
   customThemeMapping: {
     '${fullThemePath}': 'your-tailwind-class-here'
   }
 };
 
-const tool = new MigrationTool(config);
-await tool.migrate(['path/to/your/files']);
+2. Run the migration again:
+npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
 
-📝 Common examples:
-  - '${fullThemePath}': 'text-blue-600'
-  - '${fullThemePath}': 'bg-gray-100' 
-  - '${fullThemePath}': 'border-red-500'
+📝 Common mapping examples:
+  - '${fullThemePath}': 'bg-blue-500' (background color)
+  - '${fullThemePath}': 'text-gray-800' (text color)
+  - '${fullThemePath}': 'border-red-400' (border color)
+  - '${fullThemePath}': 'rounded-lg' (border radius)
 
-📖 See README.md for complete configuration examples.`
+📖 See README.md for more configuration examples.`
         );
       }
     }
@@ -68,27 +67,26 @@ await tool.migrate(['path/to/your/files']);
       throw new Error(
         `❌ Unknown theme property: ${fullThemePath}${optionalIndicator}
 
-🔧 To fix this, add mapping to your migration config:
+🔧 Create a config file to map this property:
 
-For CLI usage, create a migration script:
-// migrate-script.js
-import { MigrationTool } from 'mttwm';
-
-const config = {
+1. Create mttwm.config.js in your project root:
+// mttwm.config.js
+export default {
   customThemeMapping: {
     '${fullThemePath}': 'your-tailwind-class-here'
   }
 };
 
-const tool = new MigrationTool(config);
-await tool.migrate(['path/to/your/files']);
+2. Run the migration again:
+npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
 
-📝 Common examples:
-  - '${fullThemePath}': 'text-blue-600'
-  - '${fullThemePath}': 'bg-gray-100' 
-  - '${fullThemePath}': 'border-red-500'
+📝 Common mapping examples:
+  - '${fullThemePath}': 'bg-blue-500' (background color)
+  - '${fullThemePath}': 'text-gray-800' (text color)
+  - '${fullThemePath}': 'border-red-400' (border color)
+  - '${fullThemePath}': 'rounded-lg' (border radius)
 
-📖 See README.md for complete configuration examples.`
+📖 See README.md for more configuration examples.`
       );
     }
 

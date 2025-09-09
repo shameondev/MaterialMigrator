@@ -13,9 +13,9 @@ export class MigrationTool {
 
   constructor(config: MigrationConfig) {
     this.config = config;
-    this.converter = new StyleConverter(
-      config.customThemeMapping
-    );
+    this.converter = new StyleConverter({
+      customThemeMapping: config.customThemeMapping
+    });
     this.importResolver = new ImportResolver();
   }
 
