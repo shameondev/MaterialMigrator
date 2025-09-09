@@ -297,6 +297,7 @@ npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
     // For simple custom values (like 'main', 'primary', etc.), apply property-specific prefix directly
     const propertyPrefixes: Record<string, string> = {
       'color': 'text',
+      'background': 'bg',
       'backgroundColor': 'bg',
       'borderColor': 'border',
       'borderTopColor': 'border-t',
