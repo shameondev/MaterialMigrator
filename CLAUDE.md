@@ -99,9 +99,10 @@ This is **open source software** following industry best practices:
 ### Release Process
 Before publishing a new version:
 1. Update version number in `package.json` and `src/cli.ts`
-2. Create git tag: `git tag v<version>` (e.g., `git tag v1.5.2`)
-3. Push tag to remote: `git push origin v<version>`
-4. Publish to npm registry
+2. Update CHANGELOG.md with new version and release notes
+3. Create git tag: `git tag v<version>` (e.g., `git tag v1.5.2`)
+4. Push tag to remote: `git push origin v<version>`
+5. Publish to npm registry
 
 ### Documentation
 - Keep README.md current with installation and usage instructions
