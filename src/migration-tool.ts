@@ -130,6 +130,11 @@ export class MigrationTool {
         await writeFile(fullPath, transformResult.migratedCode, 'utf-8');
       }
 
+      // Update imported style files if they have converted properties
+      if (this.config.writeFiles && importedStyles && importedStyles.importedStyles.length > 0) {
+        await this.updateImportedStyleFiles(importedExtractions, conversions, importedStyles.importedStyles);
+      }
+
       // Determine migration status based on actual results
       const migrationStatus = this.determineMigrationStatus(
         originalCode,
@@ -280,5 +285,80 @@ export class MigrationTool {
 
     // Default case - partial if there's any change at all
     return migratedCode !== originalCode ? 'partial' : 'failed';
+  }
+
+  /**
+   * Update imported style files by removing converted properties from makeStyles calls
+   */
+  private async updateImportedStyleFiles(
+    importedExtractions: MakeStylesExtraction[],
+    conversions: Map<string, TailwindConversion>,
+    styleImports: StyleImport[]
+  ): Promise<void> {
+    // Group extractions by resolved file path from StyleImport
+    const fileGroups = new Map<string, MakeStylesExtraction[]>();
+    
+    for (const styleImport of styleImports) {
+      const matchingExtraction = importedExtractions.find(ext => 
+        ext.hookName === styleImport.hookName
+      );
+      
+      if (matchingExtraction && styleImport.resolvedPath) {
+        if (!fileGroups.has(styleImport.resolvedPath)) {
+          fileGroups.set(styleImport.resolvedPath, []);
+        }
+        fileGroups.get(styleImport.resolvedPath)!.push(matchingExtraction);
+      }
+    }
+
+    // Process each unique file
+    for (const [filePath, extractions] of fileGroups) {
+      try {
+        // Find the actual file with extension (same logic as ImportResolver.loadStylesFromFile)
+        const extensions = ['', '.ts', '.tsx', '.js', '.jsx'];
+        let fullPath: string | null = null;
+        
+        const { existsSync } = await import('fs');
+        for (const ext of extensions) {
+          const testPath = filePath + ext;
+          if (existsSync(testPath)) {
+            fullPath = testPath;
+            break;
+          }
+        }
+        
+        if (!fullPath) {
+          console.warn(`Could not find imported style file: ${filePath}`);
+          continue;
+        }
+        
+        const originalCode = await readFile(fullPath, 'utf-8');
+        
+        // Create a transformer for this file
+        const transformer = new CodeTransformer(originalCode);
+        
+        // Only process extractions that have convertible properties
+        const hasConvertibleProperties = extractions.some(extraction =>
+          extraction.styles.some(style => {
+            const styleKey = `${extraction.hookName}.${style.name}`;
+            const conversion = conversions.get(styleKey);
+            return conversion && conversion.tailwindClasses.length > 0;
+          })
+        );
+
+        if (hasConvertibleProperties) {
+          // Transform only the makeStyles calls - don't update className usages
+          const transformResult = transformer.updatePartialMakeStylesCallsAndGetCode(extractions, conversions);
+          
+          // Write the updated file if it changed
+          if (transformResult.migratedCode !== originalCode) {
+            await writeFile(fullPath, transformResult.migratedCode, 'utf-8');
+          }
+        }
+      } catch (error) {
+        // Log error but don't fail the main migration
+        console.warn(`Warning: Failed to update imported style file ${filePath}:`, error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
   }
 }

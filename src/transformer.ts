@@ -488,6 +488,73 @@ export class CodeTransformer {
   }
 
   /**
+   * Update only makeStyles calls for external files, returning transformed code
+   */
+  public updatePartialMakeStylesCallsAndGetCode(
+    extractions: MakeStylesExtraction[],
+    conversions: Map<string, TailwindConversion>
+  ): TransformResult {
+    const errors: MigrationError[] = [];
+    const warnings: ConversionWarning[] = [];
+    const classNameReplacements = new Map<string, string>();
+    const removedImports: string[] = [];
+
+    try {
+      // Update the makeStyles calls
+      this.updatePartialMakeStylesCalls(extractions, conversions);
+
+      // Generate the transformed code
+      const generated = generateFn(this.ast, {
+        retainLines: false,
+        compact: false,
+      });
+      const migratedCode = generated.code || generated;
+
+      return {
+        success: true,
+        originalCode: this.originalCode,
+        migratedCode,
+        conversions: Array.from(conversions.values()),
+        classNameReplacements,
+        removedImports,
+        errors,
+        warnings,
+        stats: {
+          totalStyles: extractions.reduce((sum, ext) => sum + ext.styles.length, 0),
+          convertedStyles: 0, // Not tracked for external files
+          unconvertibleStyles: 0, // Not tracked for external files
+          classNameReplacements: 0,
+          remainingClassesUsages: 0,
+        }
+      };
+    } catch (error) {
+      errors.push({
+        type: 'transformation',
+        message: error instanceof Error ? error.message : 'Failed to update makeStyles calls',
+        severity: 'error'
+      });
+
+      return {
+        success: false,
+        originalCode: this.originalCode,
+        migratedCode: this.originalCode,
+        conversions: [],
+        classNameReplacements,
+        removedImports,
+        errors,
+        warnings,
+        stats: {
+          totalStyles: 0,
+          convertedStyles: 0,
+          unconvertibleStyles: 0,
+          classNameReplacements: 0,
+          remainingClassesUsages: 0,
+        }
+      };
+    }
+  }
+
+  /**
    * Update makeStyles calls for partially migratable extractions
    * Remove converted properties, keep unconvertible ones
    */
@@ -655,20 +722,114 @@ export class CodeTransformer {
           continue;
         }
 
-        const transformed = this.transformClassNameExpression(
+        // Transform the argument, passing context that we're inside a cn() call
+        const transformed = this.transformClassNameExpressionInCnContext(
           arg as t.Expression,
           classesVarName,
           extraction,
           conversions,
           classNameReplacements
         );
-        newArgs.push(transformed || (arg as t.Expression));
+        
+        if (transformed) {
+          // If transformation happened and returned additional classes, add them
+          if (Array.isArray(transformed)) {
+            newArgs.push(...transformed);
+          } else {
+            newArgs.push(transformed);
+          }
+        } else {
+          newArgs.push(arg as t.Expression);
+        }
       }
 
       return t.callExpression(expr.callee, newArgs);
     }
 
     return expr;
+  }
+
+  private transformClassNameExpressionInCnContext(
+    expr: t.Expression,
+    classesVarName: string,
+    extraction: MakeStylesExtraction,
+    conversions: Map<string, TailwindConversion>,
+    classNameReplacements: Map<string, string>
+  ): t.Expression | t.Expression[] | null {
+    // Handle simple member access: classes.root
+    if (
+      t.isMemberExpression(expr) &&
+      t.isIdentifier(expr.object) &&
+      expr.object.name === classesVarName &&
+      t.isIdentifier(expr.property)
+    ) {
+      const styleName = expr.property.name;
+      const styleKey = `${extraction.hookName}.${styleName}`;
+      const conversion = conversions.get(styleKey);
+      
+      if (conversion && conversion.tailwindClasses.length > 0) {
+        const tailwindString = conversion.tailwindClasses.join(' ');
+        
+        // If there are unconvertible properties, keep original class and add Tailwind classes as separate argument
+        if (conversion.unconvertible.length > 0) {
+          const originalClassExpr = t.memberExpression(
+            t.identifier(classesVarName),
+            t.identifier(styleName)
+          );
+          
+          classNameReplacements.set(`${classesVarName}.${styleName}`, `${classesVarName}.${styleName}, "${tailwindString}"`);
+          // Return both the original expression and the Tailwind string
+          return [originalClassExpr, t.stringLiteral(tailwindString)];
+        } else {
+          // Fully convertible - use only Tailwind classes
+          classNameReplacements.set(`${classesVarName}.${styleName}`, tailwindString);
+          return t.stringLiteral(tailwindString);
+        }
+      }
+    }
+
+    // Handle optional chaining: classes?.root
+    if (
+      t.isOptionalMemberExpression(expr) &&
+      t.isIdentifier(expr.object) &&
+      expr.object.name === classesVarName &&
+      t.isIdentifier(expr.property)
+    ) {
+      const styleName = expr.property.name;
+      const styleKey = `${extraction.hookName}.${styleName}`;
+      const conversion = conversions.get(styleKey);
+      
+      if (conversion && conversion.tailwindClasses.length > 0) {
+        const tailwindString = conversion.tailwindClasses.join(' ');
+        
+        // If there are unconvertible properties, keep original class and add Tailwind classes as separate argument
+        if (conversion.unconvertible.length > 0) {
+          const originalClassExpr = t.optionalMemberExpression(
+            t.identifier(classesVarName),
+            t.identifier(styleName),
+            false,
+            true
+          );
+          
+          classNameReplacements.set(`${classesVarName}?.${styleName}`, `${classesVarName}?.${styleName}, "${tailwindString}"`);
+          // Return both the original expression and the Tailwind string
+          return [originalClassExpr, t.stringLiteral(tailwindString)];
+        } else {
+          // Fully convertible - use only Tailwind classes
+          classNameReplacements.set(`${classesVarName}?.${styleName}`, tailwindString);
+          return t.stringLiteral(tailwindString);
+        }
+      }
+    }
+
+    // For other expression types, fall back to normal transformation
+    return this.transformClassNameExpression(
+      expr,
+      classesVarName,
+      extraction,
+      conversions,
+      classNameReplacements
+    );
   }
 
   private transformBinaryExpression(
