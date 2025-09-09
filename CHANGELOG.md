@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.5] - 2025-09-09
+
+### 🎯 **CRITICAL FIX**
+- **Custom Theme Mapping Direct Classes** - Fixed custom values to generate direct class names instead of arbitrary values
+
+### Fixed
+- Custom theme mapping now generates `text-main` instead of `text-[main]` for simple values
+- `color: theme.custom.main` with config `'main'` → `text-main` ✅ (was `text-[main]`)
+- `backgroundColor: theme.custom.primary` with config `'blue-500'` → `bg-blue-500` ✅
+- CSS variables still properly wrapped: `var(--palette-background-paper)` → `bg-[var(--palette-background-paper)]`
+
+### Changed
+- `convertValueToTailwindClass` now skips CSS-to-Tailwind converter for simple custom values  
+- Only applies CSS-to-Tailwind conversion for CSS functions (`var()`, `env()`, `calc()`)
+- Improved property-aware prefix application for custom theme mappings
+
+### Technical Details
+- Enhanced custom value detection to avoid unnecessary arbitrary value wrapping
+- Preserved CSS variable handling while fixing simple value conversion
+- Updated test expectations to match correct direct class name behavior
+
 ## [1.5.4] - 2025-09-09
 
 ### 🎯 **MAJOR FIXES**
