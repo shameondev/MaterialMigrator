@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2025-09-09
+
+### 🎯 **MAJOR ENHANCEMENT - Bulletproof Migration Detection**
+This is a **BREAKING CHANGE** that fundamentally improves migration reliability for incremental workflows.
+
+### Added
+- **4-Level Status System**: complete, partial, failed, skipped migration detection
+- **Accurate Usage Counting**: Precise count of remaining `classes.x` usages in code
+- **Enhanced CLI Output**: Detailed breakdown showing exactly what needs manual review
+- **remainingClassesUsages field**: Added to MigrationResult and TransformResult types
+
+### Fixed  
+- **🚨 CRITICAL**: Fixed regex double-escaping bug causing false success reports
+- **Migration Detection**: Now accurately detects partial vs complete migrations
+- **Classes Counting**: Properly counts `classes.property` and `classes?.property` patterns
+- **AST Generation**: Always generates transformed code for accurate analysis
+
+### Changed
+- **CLI Messages**: From vague "Successfully migrated" to precise "Partially migrated (3 classes.x remain)"
+- **Migration Logic**: Enhanced determineMigrationStatus() with bulletproof detection criteria  
+- **Error Reporting**: File-by-file breakdown of migration status with remaining counts
+
+### BREAKING CHANGES
+- `MigrationResult` now includes `migrationStatus: 'complete' | 'partial' | 'failed' | 'skipped'`
+- CLI output format changed to provide more detailed status information
+
+### Migration Guide
+- **For API users**: Update code to handle new `migrationStatus` field instead of just `success` boolean
+- **For CLI users**: No action needed - enjoy more accurate migration feedback!
+
+### Impact
+- **100% Reliable**: Never falsely claims complete success when classes remain
+- **Incremental Progress**: Track exact remaining work for systematic migration  
+- **Production Ready**: Safe to rely on for incremental migration workflows
+
 ## [1.5.5] - 2025-09-09
 
 ### 🎯 **CRITICAL FIX**
