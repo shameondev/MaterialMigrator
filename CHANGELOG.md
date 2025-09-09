@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.3] - 2025-09-09
+
+### Changed
+- Updated Claude Code assistant instructions for improved development workflow
+- Enhanced project documentation and development guidelines
+
 ## [1.5.0] - 2025-09-09
 
 ### 🎯 **MAJOR FEATURES**
