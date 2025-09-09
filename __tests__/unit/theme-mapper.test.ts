@@ -68,14 +68,15 @@ describe('ThemeMapper', () => {
         expect(result).toEqual(['rounded-lg']);
       });
 
-      it('should fallback to CSS variable for unmapped custom properties', () => {
+      it('should throw error for unmapped custom properties', () => {
         const themeRef: ThemeReference = {
           type: 'theme',
         path: ['custom', 'unknownProperty']
         };
         
-        const result = themeMapper.resolveThemeReference(themeRef, 'color');
-        expect(result).toEqual(['text-[var(--unknownProperty)]']);
+        expect(() => themeMapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          /Unknown theme property.*theme\.custom\.unknownProperty/
+        );
       });
     });
 
@@ -249,14 +250,15 @@ describe('ThemeMapper', () => {
       expect(result).toEqual(['bg-white/6']);
     });
 
-    it('should fallback to CSS variable for unmapped background colors', () => {
+    it('should throw error for unmapped background colors', () => {
       const themeRef: ThemeReference = {
         type: 'theme',
         path: ['custom', 'unmappedBackgroundColor']
       };
       
-      const result = themeMapper.resolveThemeReference(themeRef, 'backgroundColor');
-      expect(result).toEqual(['bg-[var(--unmappedBackgroundColor)]']);
+      expect(() => themeMapper.resolveThemeReference(themeRef, 'backgroundColor')).toThrow(
+        expect.stringContaining('❌ Unknown theme property: theme.custom.unmappedBackgroundColor')
+      );
     });
   });
 
@@ -353,14 +355,15 @@ describe('ThemeMapper', () => {
       });
     });
 
-    it('should fallback to CSS variable for unmapped radius', () => {
+    it('should throw error for unmapped radius', () => {
       const themeRef: ThemeReference = {
         type: 'theme',
         path: ['custom', 'customRadius']
       };
       
-      const result = themeMapper.resolveThemeReference(themeRef, 'borderRadius');
-      expect(result).toEqual(['rounded-[var(--customRadius)]']);
+      expect(() => themeMapper.resolveThemeReference(themeRef, 'borderRadius')).toThrow(
+        expect.stringContaining('❌ Unknown theme property: theme.custom.customRadius')
+      );
     });
   });
 
@@ -439,24 +442,26 @@ describe('ThemeMapper', () => {
       expect(result).toEqual(['var(--theme-)']);
     });
 
-    it('should handle single-element paths', () => {
+    it('should throw error for single-element custom paths', () => {
       const themeRef: ThemeReference = {
         type: 'theme',
         path: ['custom']
       };
       
-      const result = themeMapper.resolveThemeReference(themeRef, 'color');
-      expect(result).toEqual(['text-[var(--)]']);
+      expect(() => themeMapper.resolveThemeReference(themeRef, 'color')).toThrow(
+        expect.stringContaining('❌ Unknown theme property: theme.custom')
+      );
     });
 
-    it('should handle unknown CSS properties for custom themes', () => {
+    it('should throw error for unknown CSS properties for custom themes', () => {
       const themeRef: ThemeReference = {
         type: 'theme',
         path: ['custom', 'someProperty']
       };
       
-      const result = themeMapper.resolveThemeReference(themeRef, 'unknownProperty');
-      expect(result).toEqual(['var(--someProperty)']);
+      expect(() => themeMapper.resolveThemeReference(themeRef, 'unknownProperty')).toThrow(
+        expect.stringContaining('❌ Unknown theme property: theme.custom.someProperty')
+      );
     });
 
     it('should handle palette with missing shade', () => {
@@ -628,13 +633,13 @@ describe('ThemeMapper', () => {
         };
         
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('\'theme.custom.main\': \'text-blue-600\'')
+          expect.stringContaining('\'theme.custom.main\': \'bg-blue-500\' (background color)')
         );
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('\'theme.custom.main\': \'bg-gray-100\'')
+          expect.stringContaining('\'theme.custom.main\': \'text-gray-800\' (text color)')
         );
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('\'theme.custom.main\': \'border-red-500\'')
+          expect.stringContaining('\'theme.custom.main\': \'border-red-400\' (border color)')
         );
       });
 
@@ -648,7 +653,7 @@ describe('ThemeMapper', () => {
         };
         
         expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
-          expect.stringContaining('📖 See README.md for complete configuration examples.')
+          expect.stringContaining('📖 See README.md for more configuration examples.')
         );
       });
     });

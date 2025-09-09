@@ -1,5 +1,6 @@
 import { CodeTransformer } from '../../src/transformer.js';
 import { StyleConverter } from '../../src/converter.js';
+import { ASTParser } from '../../src/parser.js';
 
 describe('Optional Chaining in Theme References', () => {
   let converter: StyleConverter;
@@ -26,23 +27,20 @@ export const TestComponent: React.FC = () => {
 };
     `;
 
-    const transformer = new CodeTransformer(sourceCode);
+    const parser = new ASTParser(sourceCode);
+    const extractions = parser.extractMakeStylesCalls();
     
-    // This should throw an error with helpful guidance
+    // This should throw an error during style conversion
     expect(() => {
-      transformer.transform(converter);
-    }).toThrow(/Optional chaining in theme reference: theme\.custom\.main\?/);
-    
-    expect(() => {
-      transformer.transform(converter);
-    }).toThrow(/customThemeMapping/);
-    
-    expect(() => {
-      transformer.transform(converter);
-    }).toThrow(/theme\.custom\.main.*text-blue-600/);
+      extractions.forEach(extraction => {
+        extraction.styles.forEach(style => {
+          converter.convertStyles(style.properties);
+        });
+      });
+    }).toThrow(/Unknown theme property: theme\.custom\.main\?/);
   });
 
-  test('should provide helpful error for theme.palette?.primary?.main', () => {
+  test('should handle theme.palette?.primary?.main with normal behavior', () => {
     const sourceCode = `
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
@@ -54,18 +52,20 @@ const useStyles = makeStyles(theme => ({
 }));
     `;
 
-    const transformer = new CodeTransformer(sourceCode);
+    const parser = new ASTParser(sourceCode);
+    const extractions = parser.extractMakeStylesCalls();
     
+    // Palette properties should work normally (not throw errors)
     expect(() => {
-      transformer.transform(converter);
-    }).toThrow(/Optional chaining in theme reference/);
-    
-    expect(() => {
-      transformer.transform(converter);
-    }).toThrow(/theme\.palette\.primary\.main.*text-primary/);
+      extractions.forEach(extraction => {
+        extraction.styles.forEach(style => {
+          converter.convertStyles(style.properties);
+        });
+      });
+    }).not.toThrow();
   });
 
-  test('should work normally with non-optional theme references', () => {
+  test('should work normally with non-theme references', () => {
     const sourceCode = `
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
@@ -83,17 +83,30 @@ export const TestComponent: React.FC = () => {
 };
     `;
 
+    const parser = new ASTParser(sourceCode);
+    const extractions = parser.extractMakeStylesCalls();
     const transformer = new CodeTransformer(sourceCode);
-    const result = transformer.transform(converter);
     
-    expect(result.success).toBe(true);
+    // Convert styles to get conversions
+    const conversions = new Map();
+    extractions.forEach(extraction => {
+      extraction.styles.forEach(style => {
+        const conversion = converter.convertStyles(style.properties);
+        conversions.set(`${extraction.hookName}.${style.name}`, conversion);
+      });
+    });
+    
+    const result = transformer.transform(extractions, conversions);
+    
     expect(result.migratedCode).toContain('min-w-[65px]');
     expect(result.migratedCode).toContain('cursor-pointer');
   });
 
-  test('should handle custom theme mapping to resolve optional chaining', () => {
+  test('should handle custom theme mapping to resolve theme references', () => {
     const customMapping = {
-      'theme.custom.main': 'text-blue-600'
+      customThemeMapping: {
+        'theme.custom.main': 'text-blue-600'
+      }
     };
     
     const converterWithMapping = new StyleConverter(customMapping);
@@ -104,7 +117,7 @@ import { makeStyles } from '@material-ui/core/styles';
 
 const useStyles = makeStyles(theme => ({
   button: {
-    color: theme.custom.main, // Non-optional version should work with mapping
+    color: theme.custom.main, // Should work with mapping
     minWidth: 65,
   }
 }));
@@ -115,10 +128,21 @@ export const TestComponent: React.FC = () => {
 };
     `;
 
+    const parser = new ASTParser(sourceCode);
+    const extractions = parser.extractMakeStylesCalls();
     const transformer = new CodeTransformer(sourceCode);
-    const result = transformer.transform(converterWithMapping);
     
-    expect(result.success).toBe(true);
+    // Convert styles with custom mapping
+    const conversions = new Map();
+    extractions.forEach(extraction => {
+      extraction.styles.forEach(style => {
+        const conversion = converterWithMapping.convertStyles(style.properties);
+        conversions.set(`${extraction.hookName}.${style.name}`, conversion);
+      });
+    });
+    
+    const result = transformer.transform(extractions, conversions);
+    
     expect(result.migratedCode).toContain('text-blue-600');
     expect(result.migratedCode).toContain('min-w-[65px]');
   });
