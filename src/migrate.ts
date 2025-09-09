@@ -37,7 +37,7 @@ program
   .option('-d, --dry-run', 'Preview changes without modifying files', false)
   .option('-v, --verbose', 'Show detailed output', false)
   .option('--preserve-original', 'Create backup files', false)
-  .option('--use-clsx', 'Use clsx for conditional classes', true)
+  .option('--use-cn', 'Use cn utility for conditional classes', true)
   .option('--generate-report', 'Generate detailed migration report', false)
   .action(async (options) => {
     const config: MigrationConfig = {
@@ -48,7 +48,7 @@ program
       dryRun: options.dryRun,
       verbose: options.verbose,
       preserveOriginal: options.preserveOriginal,
-      useClsx: options.useClsx,
+      useCn: options.useCn,
       customThemeMapping: {},
       customPropertyMapping: {},
       maxWarningsPerFile: 50,
@@ -75,7 +75,7 @@ program
       dryRun: true,
       verbose: options.verbose,
       preserveOriginal: false,
-      useClsx: true,
+      useCn: true,
       customThemeMapping: {},
       customPropertyMapping: {},
       maxWarningsPerFile: 50,

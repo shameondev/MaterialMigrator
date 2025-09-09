@@ -9,7 +9,7 @@ const config = {
   dryRun: true,
   verbose: true,
   preserveOriginal: false,
-  useClsx: true,
+  useCn: true,
   customThemeMapping: {},
   customPropertyMapping: {},
   maxWarningsPerFile: 50,

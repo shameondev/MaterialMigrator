@@ -42,7 +42,7 @@ async function loadConfigFile(projectRoot: string): Promise<Partial<MigrationCon
 program
   .name('mttwm')
   .description('MTTWM - Material To Tailwind Migrator: Migrate CSS-in-JS (makeStyles) to Tailwind CSS')
-  .version('1.4.0');
+  .version('1.5.1');
 
 program
   .command('migrate')
@@ -53,7 +53,7 @@ program
   .option('-d, --dry-run', 'Preview changes without modifying files', false)
   .option('-v, --verbose', 'Show detailed output', false)
   .option('--preserve-original', 'Create backup files', false)
-  .option('--use-clsx', 'Use clsx for conditional classes', true)
+  .option('--use-cn', 'Use cn utility for conditional classes', true)
   .option('--generate-report', 'Generate detailed migration report', false)
   .action(async (files, options) => {
     const projectRoot = process.cwd();
@@ -77,7 +77,7 @@ program
       dryRun: options.dryRun,
       verbose: options.verbose,
       preserveOriginal: options.preserveOriginal,
-      useClsx: options.useClsx,
+      useCn: options.useCn,
       generateReport: options.generateReport,
     };
 

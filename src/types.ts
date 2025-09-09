@@ -147,7 +147,7 @@ export interface MigrationConfig {
   preserveOriginal: boolean;
   
   // Conversion options
-  useClsx: boolean;
+  useCn: boolean;
   customThemeMapping: Record<string, string>;
   customPropertyMapping: Record<string, string>;
   

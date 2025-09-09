@@ -92,8 +92,16 @@ This is **open source software** following industry best practices:
 
 ### Version Management
 - **Semantic Versioning**: Follow SemVer (MAJOR.MINOR.PATCH) for all releases
+- **Git Tagging**: Before publishing, create a git tag with the version number using `git tag v<version>`
 - **GitHub Changelog**: Maintain comprehensive changelog documenting all notable changes
 - **Release Notes**: Document breaking changes, new features, and important fixes
+
+### Release Process
+Before publishing a new version:
+1. Update version number in `package.json` and `src/cli.ts`
+2. Create git tag: `git tag v<version>` (e.g., `git tag v1.5.2`)
+3. Push tag to remote: `git push origin v<version>`
+4. Publish to npm registry
 
 ### Documentation
 - Keep README.md current with installation and usage instructions
