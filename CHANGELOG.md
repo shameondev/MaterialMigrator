@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.4] - 2025-09-09
+
+### 🎯 **MAJOR FIXES**
+- **CSS Variable Conversion** - Fixed CSS variables to use proper Tailwind arbitrary value syntax
+- **Property-Aware Custom Mapping** - Custom theme values now get appropriate CSS property prefixes
+
+### Fixed
+- CSS variables now properly wrapped: `var(--palette-background-paper)` → `bg-[var(--palette-background-paper)]`
+- Custom theme mapping is property-aware: `theme.custom.main: 'main'` → `text-main` for color, `bg-main` for backgroundColor
+- Enhanced ThemeMapper to leverage existing CSS-to-Tailwind conversion logic
+- Fixed palette, spacing, and theme fallbacks to generate correct Tailwind classes
+
+### Changed
+- All CSS variable references now use Tailwind arbitrary value syntax
+- Custom theme mappings automatically get property-specific prefixes
+- Improved integration with existing CSS conversion infrastructure
+
+### Technical Details
+- Enhanced `ThemeMapper.convertValueToTailwindClass()` method
+- Updated fallback generation for palette, spacing, and general theme references
+- Comprehensive test suite updates to verify proper CSS variable handling
+
 ## [1.5.3] - 2025-09-09
 
 ### Changed
