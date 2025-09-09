@@ -467,10 +467,16 @@ function convertSingleSpacing(value: string, prefix: string): string {
 function convertSize(value: CSSValue, prefix: string): string[] {
   const val = String(value);
   
+  // Handle common keywords first
   if (val === 'auto') return [`${prefix}-auto`];
   if (val === '100%') return [`${prefix}-full`];
   if (val === '100vw') return [`${prefix}-screen`];
   if (val === '100vh') return [`${prefix}-screen`];
+  
+  // Handle CSS sizing keywords
+  if (val === 'fit-content') return [`${prefix}-fit`];
+  if (val === 'max-content') return [`${prefix}-max`];
+  if (val === 'min-content') return [`${prefix}-min`];
   if (val.includes('%')) {
     const percent = parseFloat(val);
     const fractions: Record<number, string> = {
@@ -521,9 +527,12 @@ function convertSize(value: CSSValue, prefix: string): string[] {
   }
   
   // For numeric values not in scale, add px units if not already present
-  const arbitraryValue = val.includes('px') || val.includes('%') || val.includes('rem') || val.includes('em') || val.includes('vw') || val.includes('vh')
-    ? val
-    : `${val}px`;
+  // But don't add px to CSS keywords
+  const cssKeywords = ['fit-content', 'max-content', 'min-content', 'initial', 'inherit', 'unset', 'revert'];
+  const hasUnits = val.includes('px') || val.includes('%') || val.includes('rem') || val.includes('em') || val.includes('vw') || val.includes('vh');
+  const isKeyword = cssKeywords.some(keyword => val.includes(keyword));
+  
+  const arbitraryValue = hasUnits || isKeyword ? val : `${val}px`;
   
   return [`${prefix}-[${arbitraryValue}]`];
 }
