@@ -515,4 +515,178 @@ describe('ThemeMapper', () => {
       expect(result).toEqual(['bg-primary']);
     });
   });
+
+  describe('config-based theme conversion', () => {
+    describe('customThemeMapping support', () => {
+      it('should use customThemeMapping for theme.custom properties', () => {
+        const customMapping = {
+          customThemeMapping: {
+            'theme.custom.secondary': 'text-blue-600',
+            'theme.custom.primary': ['bg-red-500', 'text-white']
+          }
+        };
+        
+        const mapper = new ThemeMapper(customMapping);
+        
+        // Test single class mapping
+        const themeRef1: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'secondary']
+        };
+        const result1 = mapper.resolveThemeReference(themeRef1, 'color');
+        expect(result1).toEqual(['text-blue-600']);
+        
+        // Test multiple class mapping
+        const themeRef2: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'primary']
+        };
+        const result2 = mapper.resolveThemeReference(themeRef2, 'backgroundColor');
+        expect(result2).toEqual(['bg-red-500', 'text-white']);
+      });
+
+      it('should use customThemeMapping for theme.superCustom properties', () => {
+        const customMapping = {
+          customThemeMapping: {
+            'theme.superCustom.main': 'border-green-400'
+          }
+        };
+        
+        const mapper = new ThemeMapper(customMapping);
+        
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['superCustom', 'main']
+        };
+        const result = mapper.resolveThemeReference(themeRef, 'borderColor');
+        expect(result).toEqual(['border-green-400']);
+      });
+    });
+
+    describe('error handling for unknown theme properties', () => {
+      it('should throw helpful error for unknown theme.custom property without mapping', () => {
+        const mapper = new ThemeMapper();
+        
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'unknownProperty'],
+          isOptional: false
+        };
+        
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('❌ Unknown theme property: theme.custom.unknownProperty')
+        );
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('customThemeMapping')
+        );
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('migrate-script.js')
+        );
+      });
+
+      it('should throw helpful error for optional chaining without mapping', () => {
+        const mapper = new ThemeMapper();
+        
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'secondary'],
+          isOptional: true
+        };
+        
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('❌ Unknown theme property: theme.custom.secondary?')
+        );
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('For CLI usage, create a migration script:')
+        );
+      });
+
+      it('should throw helpful error for theme.superCustom property without mapping', () => {
+        const mapper = new ThemeMapper();
+        
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['superCustom', 'bg'],
+          isOptional: false
+        };
+        
+        expect(() => mapper.resolveThemeReference(themeRef, 'backgroundColor')).toThrow(
+          expect.stringContaining('❌ Unknown theme property: theme.superCustom.bg')
+        );
+        expect(() => mapper.resolveThemeReference(themeRef, 'backgroundColor')).toThrow(
+          expect.stringContaining('\'theme.superCustom.bg\': \'your-tailwind-class-here\'')
+        );
+      });
+
+      it('should include practical examples in error message', () => {
+        const mapper = new ThemeMapper();
+        
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'main'],
+          isOptional: false
+        };
+        
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('\'theme.custom.main\': \'text-blue-600\'')
+        );
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('\'theme.custom.main\': \'bg-gray-100\'')
+        );
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('\'theme.custom.main\': \'border-red-500\'')
+        );
+      });
+
+      it('should reference documentation in error message', () => {
+        const mapper = new ThemeMapper();
+        
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'test'],
+          isOptional: true
+        };
+        
+        expect(() => mapper.resolveThemeReference(themeRef, 'color')).toThrow(
+          expect.stringContaining('📖 See README.md for complete configuration examples.')
+        );
+      });
+    });
+
+    describe('config priority and fallback behavior', () => {
+      it('should prioritize customThemeMapping over built-in mappings', () => {
+        // This test would require modifying the resolveCustomTheme method to check customThemeMapping first
+        // For now, we test that when customThemeMapping is provided, it works as expected
+        const customMapping = {
+          customThemeMapping: {
+            'theme.custom.builderBackgroundPrimary': 'bg-custom-override'
+          }
+        };
+        
+        const mapper = new ThemeMapper(customMapping);
+        
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'builderBackgroundPrimary']
+        };
+        
+        // Should use customThemeMapping instead of built-in mapping
+        const result = mapper.resolveThemeReference(themeRef, 'backgroundColor');
+        expect(result).toEqual(['bg-custom-override']);
+      });
+
+      it('should fall back to built-in mapping when no custom mapping exists', () => {
+        const mapper = new ThemeMapper({});
+        
+        const themeRef: ThemeReference = {
+          type: 'theme',
+          path: ['custom', 'builderBackgroundPrimary']
+        };
+        
+        // Should use built-in mapping
+        const result = mapper.resolveThemeReference(themeRef, 'backgroundColor');
+        expect(result).toEqual(['bg-builder-primary']);
+      });
+    });
+  });
 });

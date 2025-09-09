@@ -162,8 +162,40 @@ The project includes comprehensive test files covering various scenarios:
 
 The CLI currently has built-in theme mappings for common Material-UI patterns. For custom theme properties, you have these options:
 
-### Option 1: Use Built-in Mappings (Recommended)
-The tool automatically handles:
+### Option 1: Configuration File (Recommended for npx users)
+
+Create a `mttwm.config.js` file in your project root:
+
+```javascript
+// mttwm.config.js
+export default {
+  customThemeMapping: {
+    'theme.custom.secondary': 'text-blue-600',
+    'theme.custom.primary': 'bg-red-500',
+    'theme.custom.main': 'text-primary',
+    'theme.superCustom.bg': 'bg-gray-100',
+    'theme.custom.spacing.large': 'p-8',
+  },
+  customPropertyMapping: {
+    'boxShadow': (value) => `shadow-custom-${value}`,
+  },
+  verbose: true,
+  maxWarningsPerFile: 100,
+};
+```
+
+Then run:
+```bash
+npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
+```
+
+The tool will automatically load your config file and show:
+```
+📝 Loaded config from /path/to/your/project/mttwm.config.js
+```
+
+### Option 2: Use Built-in Mappings Only
+The tool automatically handles common patterns:
 ```bash
 npx mttwm migrate src/**/*.tsx --dry-run
 ```
@@ -174,7 +206,7 @@ npx mttwm migrate src/**/*.tsx --dry-run
 - `theme.breakpoints.up("md")` → responsive prefixes
 - `theme.custom.*` → CSS variables
 
-### Option 2: Programmatic Usage with Custom Config
+### Option 3: Programmatic Usage with Custom Config
 
 For advanced customization, use the tool programmatically:
 
@@ -209,31 +241,43 @@ node migrate-script.js
 
 ### Handling Theme Issues
 
-#### Optional Chaining Errors
-If you get errors like:
+#### Unknown Theme Properties
+When the migration tool encounters unknown theme properties, it will show helpful errors:
+
 ```
-❌ Optional chaining in theme reference: theme.custom?.main
+❌ Unknown theme property: theme.custom.secondary
+
+🔧 To fix this, add mapping to your migration config:
+
+For CLI usage, create a mttwm.config.js file:
+// mttwm.config.js
+export default {
+  customThemeMapping: {
+    'theme.custom.secondary': 'text-blue-600'
+  }
+};
+
+📝 Common examples:
+  - 'theme.custom.secondary': 'text-blue-600'
+  - 'theme.custom.secondary': 'bg-gray-100' 
+  - 'theme.custom.secondary': 'border-red-500'
 ```
 
-**Quick Fix:** Remove the optional chaining from your code:
-```tsx
-// ❌ Change this:
-color: theme.custom?.main
+#### Both Syntaxes Supported
+The tool handles both optional chaining and regular syntax:
+- `theme.custom?.main` ✅ (requires config mapping)
+- `theme.custom.main` ✅ (requires config mapping)
+- Both will use the same `'theme.custom.main': 'your-class'` mapping
 
-// ✅ To this:
-color: theme.custom.main
-```
+#### Migration Workflow
+1. **Run migration** with `--dry-run` first
+2. **Add missing mappings** to `mttwm.config.js` as errors appear
+3. **Re-run migration** until all theme properties are mapped
+4. **Apply changes** by removing `--dry-run` flag
 
-**Advanced Fix:** Use programmatic API with custom mapping (see Option 2 above)
-
-#### Custom Theme Properties
-For `theme.custom.*` or `theme.yourCustom.*` properties:
-
-1. **Built-in behavior**: Converts to CSS variables
-   - `theme.custom.main` → `text-[var(--main)]`
-   - `theme.superCustom.bg` → `var(--theme-superCustom-bg)`
-
-2. **For specific Tailwind classes**: Use programmatic API with `customThemeMapping`
+#### Built-in vs Custom Properties
+- **Built-in properties**: `theme.palette.*`, `theme.spacing.*` → work automatically
+- **Custom properties**: `theme.custom.*`, `theme.superCustom.*` → require config mapping
 
 ## 📊 Migration Reports
 

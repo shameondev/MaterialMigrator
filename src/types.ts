@@ -177,6 +177,7 @@ export interface ThemeMapping {
   lineHeight: Record<string, string>;
   boxShadow: Record<string, string>;
   zIndex: Record<string, string>;
+  customThemeMapping?: Record<string, string | string[]>;
 }
 
 // AST node types for makeStyles detection

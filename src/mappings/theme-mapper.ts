@@ -18,30 +18,78 @@ export class ThemeMapper {
    */
   public resolveThemeReference(themeRef: ThemeReference, cssProperty: string): string[] {
     const path = themeRef.path.join('.');
+    const fullThemePath = `theme.${path}`;
     
-    // Handle optional chaining with helpful error messages
-    if (themeRef.isOptional) {
-      throw new Error(
-        `❌ Optional chaining in theme reference: theme.${path}?.
-        
-🔧 To fix this:
-1. Add to customThemeMapping in your migration config:
-   customThemeMapping: {
-     'theme.${path}': 'your-tailwind-class-here'
-   }
-
-2. Or ensure the theme property is defined without optional chaining.
-3. Common examples:
-   - theme.custom?.main → 'text-blue-600' 
-   - theme.palette?.primary?.main → 'text-primary'
-   
-📖 See documentation for more theme mapping examples.`
-      );
+    // FIRST: Check if we have a custom mapping for this exact theme path
+    const customMapping = this.themeMapping.customThemeMapping;
+    if (customMapping && customMapping[fullThemePath]) {
+      const mappedValue = customMapping[fullThemePath];
+      return Array.isArray(mappedValue) ? mappedValue : [mappedValue];
     }
     
-    // Handle custom theme properties
+    // Handle custom theme properties - try built-in mappings first
     if (themeRef.path[0] === 'custom') {
-      return this.resolveCustomTheme(themeRef.path.slice(1), cssProperty);
+      try {
+        return this.resolveCustomTheme(themeRef.path.slice(1), cssProperty);
+      } catch (error) {
+        // If built-in mapping failed and no custom mapping, throw helpful error
+        const optionalIndicator = themeRef.isOptional ? '?' : '';
+        throw new Error(
+          `❌ Unknown theme property: ${fullThemePath}${optionalIndicator}
+
+🔧 To fix this, add mapping to your migration config:
+
+For CLI usage, create a migration script:
+// migrate-script.js
+import { MigrationTool } from 'mttwm';
+
+const config = {
+  customThemeMapping: {
+    '${fullThemePath}': 'your-tailwind-class-here'
+  }
+};
+
+const tool = new MigrationTool(config);
+await tool.migrate(['path/to/your/files']);
+
+📝 Common examples:
+  - '${fullThemePath}': 'text-blue-600'
+  - '${fullThemePath}': 'bg-gray-100' 
+  - '${fullThemePath}': 'border-red-500'
+
+📖 See README.md for complete configuration examples.`
+        );
+      }
+    }
+
+    // Handle superCustom theme properties - these always require config
+    if (themeRef.path[0] === 'superCustom') {
+      const optionalIndicator = themeRef.isOptional ? '?' : '';
+      throw new Error(
+        `❌ Unknown theme property: ${fullThemePath}${optionalIndicator}
+
+🔧 To fix this, add mapping to your migration config:
+
+For CLI usage, create a migration script:
+// migrate-script.js
+import { MigrationTool } from 'mttwm';
+
+const config = {
+  customThemeMapping: {
+    '${fullThemePath}': 'your-tailwind-class-here'
+  }
+};
+
+const tool = new MigrationTool(config);
+await tool.migrate(['path/to/your/files']);
+
+📝 Common examples:
+  - '${fullThemePath}': 'text-blue-600'
+  - '${fullThemePath}': 'bg-gray-100' 
+  - '${fullThemePath}': 'border-red-500'
+
+📖 See README.md for complete configuration examples.`
+      );
     }
 
     // Handle palette references
@@ -76,11 +124,16 @@ export class ThemeMapper {
 
     const mapper = propertyMappings[cssProperty];
     if (mapper) {
-      return mapper(customProperty);
+      const result = mapper(customProperty);
+      // Check if the mapping returned a fallback CSS variable (indicates no mapping found)
+      if (result.length === 1 && result[0].startsWith(`${cssProperty === 'color' ? 'text' : cssProperty === 'backgroundColor' ? 'bg' : cssProperty === 'borderColor' ? 'border' : 'rounded'}-[var(--`)) {
+        throw new Error(`No mapping found for custom property: ${customProperty}`);
+      }
+      return result;
     }
 
-    // Fallback: use CSS variable
-    return [`var(--${customProperty.replace(/\./g, '-')})`];
+    // For unmapped CSS properties, throw error instead of fallback
+    throw new Error(`No mapping found for custom property: ${customProperty}`);
   }
 
   private mapBackgroundColor(customProperty: string): string[] {

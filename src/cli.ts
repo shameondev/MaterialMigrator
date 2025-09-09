@@ -3,8 +3,40 @@
 import { glob } from 'glob';
 import { program } from 'commander';
 import chalk from 'chalk';
+import { existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { createRequire } from 'module';
 import { MigrationTool } from './migration-tool.js';
 import type { MigrationConfig } from './types.js';
+
+/**
+ * Load configuration from mttwm.config.js in project root
+ */
+async function loadConfigFile(projectRoot: string): Promise<Partial<MigrationConfig>> {
+  const configPath = join(projectRoot, 'mttwm.config.js');
+  
+  if (!existsSync(configPath)) {
+    return {};
+  }
+
+  try {
+    // Use dynamic import for ES modules
+    const { default: config } = await import(`file://${configPath}`);
+    console.log(chalk.green(`📝 Loaded config from ${configPath}`));
+    return config || {};
+  } catch (error) {
+    try {
+      // Fallback to require for CommonJS modules
+      const require = createRequire(import.meta.url);
+      const config = require(configPath);
+      console.log(chalk.green(`📝 Loaded config from ${configPath}`));
+      return config || {};
+    } catch (requireError) {
+      console.warn(chalk.yellow(`⚠️  Failed to load config from ${configPath}: ${error}`));
+      return {};
+    }
+  }
+}
 
 // CLI Setup
 program
@@ -24,19 +56,28 @@ program
   .option('--use-clsx', 'Use clsx for conditional classes', true)
   .option('--generate-report', 'Generate detailed migration report', false)
   .action(async (files, options) => {
+    const projectRoot = process.cwd();
+    
+    // Load config from mttwm.config.js if it exists
+    const fileConfig = await loadConfigFile(projectRoot);
+    
     const config: MigrationConfig = {
-      projectRoot: process.cwd(),
-      writeFiles: !options.dryRun,
+      // Default values
+      projectRoot,
       include: options.pattern,
       exclude: options.exclude,
-      dryRun: options.dryRun,
-      verbose: options.verbose,
-      preserveOriginal: options.preserveOriginal,
-      useClsx: options.useClsx,
       customThemeMapping: {},
       customPropertyMapping: {},
       maxWarningsPerFile: 50,
       failOnErrors: false,
+      // Merge file config
+      ...fileConfig,
+      // CLI options always take precedence over config file
+      writeFiles: !options.dryRun,
+      dryRun: options.dryRun,
+      verbose: options.verbose,
+      preserveOriginal: options.preserveOriginal,
+      useClsx: options.useClsx,
       generateReport: options.generateReport,
     };
 
