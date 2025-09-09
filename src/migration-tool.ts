@@ -66,10 +66,21 @@ export class MigrationTool {
       
       // If no makeStyles found locally and no imported styles, return original
       if (extractions.length === 0 && (!importedStyles || importedStyles.importedStyles.length === 0)) {
+        // Determine the specific reason for skipping
+        let skipReason = 'No makeStyles calls found';
+        if (originalCode.includes('makeStyles')) {
+          skipReason = 'makeStyles calls found but could not be parsed';
+        } else if (originalCode.includes('classes.') || originalCode.includes('classes?.')) {
+          skipReason = 'Found classes usage but no makeStyles or imported styles';
+        } else if (originalCode.includes('useStyles')) {
+          skipReason = 'Found useStyles references but could not resolve imports';
+        }
+
         return {
           filePath,
           success: true,
           migrationStatus: 'skipped',
+          error: skipReason,
           originalCode,
           migratedCode: originalCode,
           conversions: [],
@@ -216,13 +227,40 @@ export class MigrationTool {
     console.log(`✅ Fully migrated: ${complete.length} files`);
     console.log(`🔄 Partially migrated: ${partial.length} files`);
     console.log(`❌ Failed to migrate: ${failed.length} files`);
-    console.log(`⏭️  Skipped (no styles): ${skipped.length} files\n`);
+    console.log(`⏭️  Skipped: ${skipped.length} files\n`);
     
     if (failed.length > 0) {
       console.log('Failed files:');
       failed.forEach(r => {
         console.log(`- ${r.filePath}: ${r.error || 'No styles migrated, all classes.x remain'}`);
       });
+      console.log();
+    }
+
+    if (skipped.length > 0) {
+      // Group skipped files by reason for cleaner output
+      const skipReasons = new Map<string, string[]>();
+      skipped.forEach(r => {
+        const reason = r.error || 'No makeStyles calls found';
+        if (!skipReasons.has(reason)) {
+          skipReasons.set(reason, []);
+        }
+        skipReasons.get(reason)!.push(r.filePath);
+      });
+
+      console.log('Skipped files by reason:');
+      for (const [reason, files] of skipReasons) {
+        console.log(`\n📋 ${reason}: ${files.length} files`);
+        if (files.length <= 5) {
+          // Show all files if 5 or fewer
+          files.forEach(filePath => console.log(`  - ${filePath}`));
+        } else {
+          // Show first 3 and last 2 with count
+          files.slice(0, 3).forEach(filePath => console.log(`  - ${filePath}`));
+          console.log(`  ... and ${files.length - 5} more files`);
+          files.slice(-2).forEach(filePath => console.log(`  - ${filePath}`));
+        }
+      }
       console.log();
     }
 

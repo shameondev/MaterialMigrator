@@ -127,7 +127,7 @@ program
         console.log(chalk.red(`❌ Failed to migrate: ${failed.length} files`));
       }
       if (skipped.length > 0) {
-        console.log(chalk.gray(`⏭️  Skipped (no styles): ${skipped.length} files`));
+        console.log(chalk.gray(`⏭️  Skipped: ${skipped.length} files`));
       }
 
       // Show details for files that need attention
@@ -136,6 +136,31 @@ program
         failed.forEach(r => {
           console.log(chalk.red(`- ${r.filePath}: ${r.error || 'No styles migrated, all classes.x remain'}`));
         });
+      }
+
+      // Show skipped files details when verbose
+      if (options.verbose && skipped.length > 0) {
+        // Group skipped files by reason for cleaner output
+        const skipReasons = new Map<string, string[]>();
+        skipped.forEach(r => {
+          const reason = r.error || 'No makeStyles calls found';
+          if (!skipReasons.has(reason)) {
+            skipReasons.set(reason, []);
+          }
+          skipReasons.get(reason)!.push(r.filePath);
+        });
+
+        console.log(chalk.gray('\nSkipped files by reason:'));
+        for (const [reason, files] of skipReasons) {
+          console.log(chalk.gray(`\n📋 ${reason}: ${files.length} files`));
+          const displayFiles = files.slice(0, 10); // Show up to 10 files in verbose mode
+          displayFiles.forEach(filePath => console.log(chalk.gray(`  - ${filePath}`)));
+          if (files.length > 10) {
+            console.log(chalk.gray(`  ... and ${files.length - 10} more files`));
+          }
+        }
+      } else if (skipped.length > 0) {
+        console.log(chalk.gray('\nUse --verbose to see details about skipped files'));
       }
 
       if (partial.length > 0) {
