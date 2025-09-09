@@ -42,7 +42,7 @@ async function loadConfigFile(projectRoot: string): Promise<Partial<MigrationCon
 program
   .name('mttwm')
   .description('MTTWM - Material To Tailwind Migrator: Migrate CSS-in-JS (makeStyles) to Tailwind CSS')
-  .version('1.5.1');
+  .version('1.5.2');
 
 program
   .command('migrate')
