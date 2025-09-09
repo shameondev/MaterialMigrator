@@ -283,17 +283,18 @@ npx mttwm migrate --pattern "src/**/*.tsx" --dry-run
       return [value];
     }
     
-    // Use existing CSS-to-Tailwind conversion logic if available
-    const converter = CSS_TO_TAILWIND_MAP[cssProperty];
-    if (converter) {
-      const result = converter(value);
-      // If the converter returns empty array, fall back to manual prefix
-      if (result.length > 0) {
-        return result;
+    // For CSS variables, use existing CSS-to-Tailwind conversion logic
+    if (value.startsWith('var(') || value.startsWith('env(') || value.startsWith('calc(')) {
+      const converter = CSS_TO_TAILWIND_MAP[cssProperty];
+      if (converter) {
+        const result = converter(value);
+        if (result.length > 0) {
+          return result;
+        }
       }
     }
     
-    // Fallback: apply property-specific Tailwind prefix manually
+    // For simple custom values (like 'main', 'primary', etc.), apply property-specific prefix directly
     const propertyPrefixes: Record<string, string> = {
       'color': 'text',
       'backgroundColor': 'bg',

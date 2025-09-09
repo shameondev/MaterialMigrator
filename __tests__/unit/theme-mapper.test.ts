@@ -563,17 +563,17 @@ describe('ThemeMapper', () => {
           path: ['custom', 'main']
         };
         
-        // Test color property gets text- prefix (CSS-to-Tailwind uses arbitrary values for unknown colors)
+        // Test color property gets text- prefix (direct class name for custom values)
         const colorResult = mapper.resolveThemeReference(themeRef, 'color');
-        expect(colorResult).toEqual(['text-[main]']);
+        expect(colorResult).toEqual(['text-main']);
         
         // Test backgroundColor property gets bg- prefix
         const bgResult = mapper.resolveThemeReference(themeRef, 'backgroundColor');
-        expect(bgResult).toEqual(['bg-[main]']);
+        expect(bgResult).toEqual(['bg-main']);
         
         // Test borderColor property gets border- prefix
         const borderResult = mapper.resolveThemeReference(themeRef, 'borderColor');
-        expect(borderResult).toEqual(['border-[main]']);
+        expect(borderResult).toEqual(['border-main']);
       });
       
       it('should preserve existing Tailwind prefixes in custom mappings', () => {
