@@ -511,8 +511,7 @@ export class CodeTransformer {
       const migratedCode = generated.code || generated;
 
       return {
-        success: true,
-        originalCode: this.originalCode,
+        originalCode: this.sourceCode,
         migratedCode,
         conversions: Array.from(conversions.values()),
         classNameReplacements,
@@ -529,15 +528,13 @@ export class CodeTransformer {
       };
     } catch (error) {
       errors.push({
-        type: 'transformation',
-        message: error instanceof Error ? error.message : 'Failed to update makeStyles calls',
-        severity: 'error'
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update makeStyles calls'
       });
 
       return {
-        success: false,
-        originalCode: this.originalCode,
-        migratedCode: this.originalCode,
+        originalCode: this.sourceCode,
+        migratedCode: this.sourceCode,
         conversions: [],
         classNameReplacements,
         removedImports,
