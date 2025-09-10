@@ -333,7 +333,7 @@ export class CodeTransformer {
           
           if (
             t.isJSXIdentifier(node.name) &&
-            node.name.name === 'className' &&
+            (node.name.name === 'className' || node.name.name.endsWith('ClassName')) &&
             node.value &&
             t.isJSXExpressionContainer(node.value)
           ) {
@@ -1041,7 +1041,7 @@ export class CodeTransformer {
           
           if (
             t.isJSXIdentifier(node.name) &&
-            node.name.name === 'className' &&
+            (node.name.name === 'className' || node.name.name.endsWith('ClassName')) &&
             node.value &&
             t.isJSXExpressionContainer(node.value)
           ) {
