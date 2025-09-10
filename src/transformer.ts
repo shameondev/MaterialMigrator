@@ -488,6 +488,17 @@ export class CodeTransformer {
       );
     }
 
+    // Handle object expressions: { [classes.unscrollable]: isDrawerVisible }
+    if (t.isObjectExpression(expr)) {
+      return this.transformObjectExpression(
+        expr,
+        classesVarName,
+        extraction,
+        conversions,
+        classNameReplacements
+      );
+    }
+
     return null;
   }
 
@@ -857,6 +868,53 @@ export class CodeTransformer {
     ) || expr.right;
 
     return t.binaryExpression(expr.operator, left, right);
+  }
+
+  private transformObjectExpression(
+    expr: t.ObjectExpression,
+    classesVarName: string,
+    extraction: MakeStylesExtraction,
+    conversions: Map<string, TailwindConversion>,
+    classNameReplacements: Map<string, string>
+  ): t.Expression {
+    const transformedProperties: (t.ObjectMethod | t.ObjectProperty | t.SpreadElement)[] = [];
+
+    for (const prop of expr.properties) {
+      if (t.isObjectProperty(prop)) {
+        // Handle computed properties like [classes.unscrollable]: condition
+        if (prop.computed && t.isMemberExpression(prop.key)) {
+          const transformedKey = this.transformClassNameExpression(
+            prop.key,
+            classesVarName,
+            extraction,
+            conversions,
+            classNameReplacements
+          );
+          
+          if (transformedKey && t.isStringLiteral(transformedKey)) {
+            // Convert { [classes.unscrollable]: condition } to { 'tailwind-classes': condition }
+            transformedProperties.push(
+              t.objectProperty(
+                transformedKey,
+                prop.value,
+                false // computed: false since we now have a string literal
+              )
+            );
+          } else {
+            // Keep original if transformation failed
+            transformedProperties.push(prop);
+          }
+        } else {
+          // Handle non-computed properties (regular object properties)
+          transformedProperties.push(prop);
+        }
+      } else {
+        // Keep methods and spread elements as-is
+        transformedProperties.push(prop);
+      }
+    }
+
+    return t.objectExpression(transformedProperties);
   }
 
   private removeMakeStylesCalls(

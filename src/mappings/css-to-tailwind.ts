@@ -79,6 +79,20 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
     return wraps[String(value)] ? [wraps[String(value)]] : [];
   },
 
+  flexGrow: (value) => {
+    const val = Number(value);
+    if (val === 0) return ['grow-0'];
+    if (val === 1) return ['grow'];
+    return [`grow-[${value}]`];
+  },
+
+  flexShrink: (value) => {
+    const val = Number(value);
+    if (val === 0) return ['shrink-0'];
+    if (val === 1) return ['shrink'];
+    return [`shrink-[${value}]`];
+  },
+
   // Grid
   gridTemplateColumns: (value) => {
     const val = String(value);
