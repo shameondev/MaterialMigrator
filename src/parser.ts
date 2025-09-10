@@ -317,6 +317,26 @@ export class ASTParser {
       };
     }
 
+    // Unary expressions (-, +, !)
+    if (t.isUnaryExpression(node)) {
+      if (t.isNumericLiteral(node.argument) && (node.operator === '-' || node.operator === '+')) {
+        const value = node.operator === '-' ? -node.argument.value : node.argument.value;
+        return value;
+      }
+      // For other unary expressions, try to extract the argument value
+      const argumentValue = this.extractCSSValue(node.argument);
+      if (typeof argumentValue === 'number') {
+        if (node.operator === '-') return -argumentValue;
+        if (node.operator === '+') return +argumentValue;
+      }
+      return `${node.operator}${argumentValue}`;
+    }
+
+    // Arrow function expressions - these are dynamic values we can't convert
+    if (t.isArrowFunctionExpression(node) || t.isFunctionExpression(node)) {
+      return '{dynamic-function}';
+    }
+
     // Fallback: return string representation with more context
     if (t.isIdentifier(node)) {
       return `prop(${node.name})`;

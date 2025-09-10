@@ -22,7 +22,9 @@
       "Bash(npx tsc:*)",
       "Bash(npm run typecheck:*)",
       "Bash(node:*)",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": [],
     "ask": []
