@@ -436,6 +436,61 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
     const val = String(value).replace('ms', '');
     return durations[val] ? [durations[val]] : [`duration-[${value}]`];
   },
+
+  transitionProperty: (value) => {
+    const properties: Record<string, string> = {
+      'none': 'transition-none',
+      'all': 'transition-all',
+      'colors': 'transition-colors',
+      'opacity': 'transition-opacity',
+      'shadow': 'transition-shadow',
+      'transform': 'transition-transform',
+      'color': 'transition-colors',
+      'background-color': 'transition-colors',
+      'border-color': 'transition-colors',
+      'text-decoration-color': 'transition-colors',
+      'fill': 'transition-colors',
+      'stroke': 'transition-colors',
+      'width': 'transition-all',
+      'height': 'transition-all',
+      'padding': 'transition-all',
+      'margin': 'transition-all',
+    };
+    
+    const val = String(value).toLowerCase().trim();
+    
+    // Handle multiple properties separated by commas
+    if (val.includes(',')) {
+      const props = val.split(',').map(p => p.trim());
+      const hasColors = props.some(p => 
+        ['color', 'background-color', 'border-color', 'text-decoration-color', 'fill', 'stroke'].includes(p)
+      );
+      const hasTransform = props.includes('transform');
+      const hasOpacity = props.includes('opacity');
+      
+      // Return most appropriate single class for common combinations
+      if (hasColors && hasTransform) return ['transition-all'];
+      if (hasColors) return ['transition-colors'];
+      if (hasTransform) return ['transition-transform'];
+      if (hasOpacity) return ['transition-opacity'];
+      return ['transition-all'];
+    }
+    
+    // Single property
+    return properties[val] ? [properties[val]] : [`transition-[${value}]`];
+  },
+
+  transitionTimingFunction: (value) => {
+    const timings: Record<string, string> = {
+      'linear': 'ease-linear',
+      'ease': 'ease-out',
+      'ease-in': 'ease-in',
+      'ease-out': 'ease-out',
+      'ease-in-out': 'ease-in-out',
+    };
+    const val = String(value).toLowerCase();
+    return timings[val] ? [timings[val]] : [`ease-[${value}]`];
+  },
 };
 
 /**
