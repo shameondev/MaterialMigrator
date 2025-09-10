@@ -83,9 +83,11 @@ export class CodeTransformer {
 
       // Generate the transformed code - always generate to count remaining classes properly
       const migratedCode = generateFn(this.ast, {
-        retainLines: false,
+        retainLines: true,
         compact: false,
         concise: false,
+        minified: false,
+        shouldPrintComment: () => true,
       }).code;
 
       // Collect warnings from conversions
@@ -207,9 +209,11 @@ export class CodeTransformer {
 
       // Generate the transformed code
       const migratedCode = generateFn(this.ast, {
-        retainLines: false,
+        retainLines: true,
         compact: false,
         concise: false,
+        minified: false,
+        shouldPrintComment: () => true,
       }).code;
 
       // Collect warnings from conversions
@@ -505,7 +509,7 @@ export class CodeTransformer {
 
       // Generate the transformed code
       const generated = generateFn(this.ast, {
-        retainLines: false,
+        retainLines: true,
         compact: false,
       });
       const migratedCode = generated.code || generated;
@@ -1025,12 +1029,6 @@ export class CodeTransformer {
       });
 
       if (!hasCnImport) {
-        // Add cn import at the top
-        const cnImport = t.importDeclaration(
-          [t.importSpecifier(t.identifier('cn'), t.identifier('cn'))],
-          t.stringLiteral('@/lib/utils')
-        );
-
         // Find the last import and add after it
         let lastImportIndex = -1;
         for (let i = 0; i < this.ast.program.body.length; i++) {
@@ -1039,7 +1037,21 @@ export class CodeTransformer {
           }
         }
 
-        this.ast.program.body.splice(lastImportIndex + 1, 0, cnImport);
+        // Add cn import at the top
+        const cnImport = t.importDeclaration(
+          [t.importSpecifier(t.identifier('cn'), t.identifier('cn'))],
+          t.stringLiteral('@/lib/utils')
+        );
+        
+        // Add proper line breaks for formatting
+        if (lastImportIndex >= 0) {
+          cnImport.leadingComments = [];
+          cnImport.trailingComments = [];
+        }
+
+        // If we found imports, insert after the last one, otherwise insert at the beginning
+        const insertIndex = lastImportIndex >= 0 ? lastImportIndex + 1 : 0;
+        this.ast.program.body.splice(insertIndex, 0, cnImport);
       }
     }
   }
