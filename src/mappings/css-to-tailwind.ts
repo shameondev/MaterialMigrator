@@ -313,6 +313,31 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
     return ['opacity-100'];
   },
 
+  // Backdrop filters
+  backdropFilter: (value) => {
+    const val = String(value).toLowerCase();
+    if (val.includes('blur(')) {
+      const blurMatch = val.match(/blur\((\d+(?:\.\d+)?)px\)/);
+      if (blurMatch) {
+        const blurValue = Number(blurMatch[1]);
+        if (blurValue <= 2) return ['backdrop-blur-none'];
+        if (blurValue <= 4) return ['backdrop-blur-sm'];
+        if (blurValue <= 8) return ['backdrop-blur'];
+        if (blurValue <= 12) return ['backdrop-blur-md'];
+        if (blurValue <= 16) return ['backdrop-blur-lg'];
+        if (blurValue <= 24) return ['backdrop-blur-xl'];
+        if (blurValue <= 40) return ['backdrop-blur-2xl'];
+        return ['backdrop-blur-3xl'];
+      }
+    }
+    return [`backdrop-[${value}]`];
+  },
+
+  '-webkit-backdrop-filter': (value) => {
+    // Delegate to backdropFilter for consistent handling
+    return CSS_TO_TAILWIND_MAP.backdropFilter(value);
+  },
+
   // Cursor
   cursor: (value) => {
     const cursors: Record<string, string> = {
