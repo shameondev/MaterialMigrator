@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2025-09-10
+
+### 🎯 **ENHANCED MIGRATION COVERAGE**
+Significant improvements to CSS property support and component library compatibility.
+
+### Added
+- **Custom className prop support** - Now handles `popoverClassName`, `overlayClassName`, `tooltipClassName`, etc.
+- **Comprehensive transition properties** - Full support for `transitionProperty`, `transitionTimingFunction`, etc.
+- **Backdrop filter support** - Added `backdropFilter` and `-webkit-backdrop-filter` CSS properties
+- **Flex properties** - Added `flexGrow` and `flexShrink` mappings to Tailwind classes
+- **Object expression transformation** - Conditional classes like `{ [classes.unscrollable]: isDrawerVisible }`
+
+### Fixed
+- **Dynamic function placeholders** - Correctly handles `height: ({ height }) => height` without conversion
+- **Unary expressions** - Negative values like `top: -22` now convert to `top-[-22px]` properly
+- **CSS value parsing** - Improved parsing for various CSS expression types
+- **Code formatting preservation** - Better retention of blank lines and spacing in migrated code
+
+### Changed
+- **Extended JSX attribute detection** - Supports any prop ending with "ClassName" for broader component library compatibility
+- **Enhanced CSS property coverage** - More comprehensive mapping of CSS properties to Tailwind classes
+
+### Impact
+- **Broader compatibility** - Works with more component libraries using custom className props
+- **More complete migrations** - Handles additional CSS properties and expressions
+- **Better code quality** - Preserves formatting and handles edge cases properly
+
 ## [1.6.0] - 2025-09-09
 
 ### 🎯 **MAJOR ENHANCEMENT - Bulletproof Migration Detection**
