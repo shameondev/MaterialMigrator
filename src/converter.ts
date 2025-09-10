@@ -156,6 +156,12 @@ export class StyleConverter {
       return [];
     }
 
+    // Handle dynamic functions that can't be converted statically
+    if (typeof value === 'string' && value.startsWith('{') && value.includes('function')) {
+      // These are placeholders for dynamic values that can't be converted
+      return [];
+    }
+
     // Handle dynamic values (conditional, logical)
     if (this.isDynamicValue(value)) {
       return this.handleDynamicValue(property, value);
