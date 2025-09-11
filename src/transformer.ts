@@ -309,8 +309,13 @@ export class CodeTransformer {
   }
 
   /**
-   * Validates that all classes.xxx usages in the AST can be successfully converted
+   * FIXED: Validates that all classes.xxx usages in the AST can be successfully converted
    * This prevents broken references when makeStyles is removed
+   * 
+   * The previous version only checked MemberExpression but missed:
+   * - OptionalMemberExpression (classes?.xxx) 
+   * - Computed properties in objects ([classes.xxx]: condition)
+   * - Nested expressions in function calls, templates, etc.
    */
   private validateAllClassUsagesConvertible(
     extraction: MakeStylesExtraction,
@@ -320,9 +325,11 @@ export class CodeTransformer {
     if (!classesVarName) return false;
 
     let allUsagesConvertible = true;
+    const unconvertibleUsages: string[] = [];
 
-    // Traverse the AST to find all classes.xxx usages
+    // Comprehensive AST traversal that matches transformation logic patterns
     traverseFn(this.ast, {
+      // Pattern 1: Direct member expressions (classes.xxx)
       MemberExpression: (path: NodePath<t.MemberExpression>) => {
         const { node } = path;
         
@@ -331,21 +338,105 @@ export class CodeTransformer {
           node.object.name === classesVarName &&
           t.isIdentifier(node.property)
         ) {
-          // Found a classes.xxx usage - check if it's convertible
-          const styleKey = `${extraction.hookName}.${node.property.name}`;
-          const conversion = conversions.get(styleKey);
-          
-          // If this usage doesn't have a conversion or has unconvertible properties,
-          // mark as not fully migratable
-          if (!conversion || conversion.unconvertible.length > 0) {
+          if (!this.checkStyleConvertible(extraction.hookName, node.property.name, conversions, unconvertibleUsages)) {
             allUsagesConvertible = false;
-            path.stop(); // Stop traversal early
+          }
+        }
+      },
+
+      // Pattern 2: Optional member expressions (classes?.xxx) - PREVIOUSLY MISSING
+      OptionalMemberExpression: (path: NodePath<t.OptionalMemberExpression>) => {
+        const { node } = path;
+        
+        if (
+          t.isIdentifier(node.object) &&
+          node.object.name === classesVarName &&
+          t.isIdentifier(node.property)
+        ) {
+          if (!this.checkStyleConvertible(extraction.hookName, node.property.name, conversions, unconvertibleUsages)) {
+            allUsagesConvertible = false;
+          }
+        }
+      },
+
+      // Pattern 3: Computed properties in objects ([classes.xxx]: condition) - PREVIOUSLY MISSING  
+      ObjectProperty: (path: NodePath<t.ObjectProperty>) => {
+        const { node } = path;
+        
+        // Check computed properties with member expressions
+        if (node.computed && t.isMemberExpression(node.key)) {
+          const keyExpr = node.key;
+          if (
+            t.isIdentifier(keyExpr.object) &&
+            keyExpr.object.name === classesVarName &&
+            t.isIdentifier(keyExpr.property)
+          ) {
+            if (!this.checkStyleConvertible(extraction.hookName, keyExpr.property.name, conversions, unconvertibleUsages)) {
+              allUsagesConvertible = false;
+            }
+          }
+        }
+        
+        // Check computed properties with optional member expressions
+        if (node.computed && t.isOptionalMemberExpression(node.key)) {
+          const keyExpr = node.key;
+          if (
+            t.isIdentifier(keyExpr.object) &&
+            keyExpr.object.name === classesVarName &&
+            t.isIdentifier(keyExpr.property)
+          ) {
+            if (!this.checkStyleConvertible(extraction.hookName, keyExpr.property.name, conversions, unconvertibleUsages)) {
+              allUsagesConvertible = false;
+            }
           }
         }
       }
     });
 
+    // Log details for debugging if validation fails
+    if (!allUsagesConvertible) {
+      console.log(`❌ Validation failed for ${extraction.hookName}:`);
+      console.log(`   Unconvertible usages found: ${unconvertibleUsages.join(', ')}`);
+      console.log(`   This extraction will be marked as PARTIALLY migratable to prevent broken references`);
+    }
+
     return allUsagesConvertible;
+  }
+
+  /**
+   * Helper method to check if a specific style is convertible
+   * CROSS-FILE FIX: Search across all possible hookNames for imported styles
+   */
+  private checkStyleConvertible(
+    hookName: string, 
+    styleName: string, 
+    conversions: Map<string, TailwindConversion>,
+    unconvertibleUsages: string[]
+  ): boolean {
+    // First try the direct hookName (for local styles)
+    let styleKey = `${hookName}.${styleName}`;
+    let conversion = conversions.get(styleKey);
+    
+    // CROSS-FILE FIX: If not found, search all conversions for this style name
+    // This handles imported styles where hookName differs between files
+    if (!conversion) {
+      for (const [key, conv] of conversions.entries()) {
+        if (key.endsWith(`.${styleName}`)) {
+          conversion = conv;
+          styleKey = key;
+          break;
+        }
+      }
+    }
+    
+    // If this usage doesn't have a conversion or has unconvertible properties,
+    // mark as not fully migratable
+    if (!conversion || conversion.unconvertible.length > 0) {
+      unconvertibleUsages.push(`${styleName} (${!conversion ? 'no conversion found in any file' : `${conversion.unconvertible.length} unconvertible properties in ${styleKey}`})`);
+      return false;
+    }
+    
+    return true;
   }
 
   /**
@@ -721,8 +812,8 @@ export class CodeTransformer {
               this.removeConvertedProperties(prop.value, conversion);
             }
             return true; // Keep the style object
-          } else if (conversion && conversion.tailwindClasses.length > 0) {
-            // Remove fully converted styles
+          } else if (conversion && conversion.tailwindClasses.length > 0 && conversion.unconvertible.length === 0) {
+            // Remove ONLY fully converted styles (no unconvertible properties)
             return false;
           } else if (conversion && conversion.tailwindClasses.length === 0 && conversion.unconvertible.length === 0) {
             // Remove empty styles (no properties to convert)
