@@ -287,7 +287,7 @@ export class CodeTransformer {
   ): MakeStylesExtraction[] {
     return extractions.filter(extraction => {
       // Check if all styles in this extraction have successful conversions
-      return extraction.styles.every(style => {
+      const hasConvertibleStyles = extraction.styles.every(style => {
         const styleKey = `${extraction.hookName}.${style.name}`;
         const conversion = conversions.get(styleKey);
         
@@ -297,7 +297,80 @@ export class CodeTransformer {
                conversion.unconvertible.length === 0 &&
                (conversion.tailwindClasses.length > 0 || Object.keys(conversion.original).length === 0);
       });
+
+      if (!hasConvertibleStyles) {
+        return false;
+      }
+
+      // CRITICAL FIX: Also verify that ALL className usages in the AST can be converted
+      // This prevents removing makeStyles when there are still unconverted classes.xxx references
+      return this.validateAllClassUsagesConvertible(extraction, conversions);
     });
+  }
+
+  /**
+   * Validates that all classes.xxx usages in the AST can be successfully converted
+   * This prevents broken references when makeStyles is removed
+   */
+  private validateAllClassUsagesConvertible(
+    extraction: MakeStylesExtraction,
+    conversions: Map<string, TailwindConversion>
+  ): boolean {
+    const classesVarName = this.findClassesVariableName(extraction.hookName);
+    if (!classesVarName) return false;
+
+    let allUsagesConvertible = true;
+
+    // Traverse the AST to find all classes.xxx usages
+    traverseFn(this.ast, {
+      MemberExpression: (path: NodePath<t.MemberExpression>) => {
+        const { node } = path;
+        
+        if (
+          t.isIdentifier(node.object) &&
+          node.object.name === classesVarName &&
+          t.isIdentifier(node.property)
+        ) {
+          // Found a classes.xxx usage - check if it's convertible
+          const styleKey = `${extraction.hookName}.${node.property.name}`;
+          const conversion = conversions.get(styleKey);
+          
+          // If this usage doesn't have a conversion or has unconvertible properties,
+          // mark as not fully migratable
+          if (!conversion || conversion.unconvertible.length > 0) {
+            allUsagesConvertible = false;
+            path.stop(); // Stop traversal early
+          }
+        }
+      }
+    });
+
+    return allUsagesConvertible;
+  }
+
+  /**
+   * Find the actual variable name used for classes (e.g., "classes" from "const classes = useStyles()")
+   */
+  private findClassesVariableName(hookName: string): string | null {
+    let classesVarName: string | null = null;
+
+    traverseFn(this.ast, {
+      VariableDeclarator: (path: NodePath<t.VariableDeclarator>) => {
+        const { node } = path;
+        
+        if (
+          t.isIdentifier(node.id) &&
+          t.isCallExpression(node.init) &&
+          t.isIdentifier(node.init.callee) &&
+          node.init.callee.name === hookName
+        ) {
+          classesVarName = node.id.name;
+          path.stop(); // Found it, stop searching
+        }
+      }
+    });
+
+    return classesVarName;
   }
 
   private getPartiallyMigratableExtractions(
@@ -892,14 +965,32 @@ export class CodeTransformer {
           );
           
           if (transformedKey && t.isStringLiteral(transformedKey)) {
-            // Convert { [classes.unscrollable]: condition } to { 'tailwind-classes': condition }
-            transformedProperties.push(
-              t.objectProperty(
-                transformedKey,
-                prop.value,
-                false // computed: false since we now have a string literal
-              )
-            );
+            const tailwindClasses = transformedKey.value;
+            
+            // Check if the Tailwind classes contain pseudo-selectors or complex combinations
+            // that should not be used in conditional objects
+            const hasPseudoSelectors = tailwindClasses.includes('hover:') || 
+                                     tailwindClasses.includes('focus:') || 
+                                     tailwindClasses.includes('active:') ||
+                                     tailwindClasses.includes('visited:') ||
+                                     tailwindClasses.includes('disabled:');
+            
+            const hasMultipleClasses = tailwindClasses.trim().split(/\s+/).length > 1;
+            
+            // If the converted classes contain pseudo-selectors or multiple classes,
+            // keep the original to avoid confusing conditional logic
+            if (hasPseudoSelectors || hasMultipleClasses) {
+              transformedProperties.push(prop);
+            } else {
+              // Convert { [classes.unscrollable]: condition } to { 'tailwind-classes': condition }
+              transformedProperties.push(
+                t.objectProperty(
+                  transformedKey,
+                  prop.value,
+                  false // computed: false since we now have a string literal
+                )
+              );
+            }
           } else {
             // Keep original if transformation failed
             transformedProperties.push(prop);

@@ -163,6 +163,7 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
   // Colors
   color: (value) => convertColor(value, 'text'),
   backgroundColor: (value) => convertColor(value, 'bg'),
+  background: (value) => convertColor(value, 'bg'),
   borderColor: (value) => convertColor(value, 'border'),
 
   // Typography
@@ -247,6 +248,26 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
     return decorations[String(value)] ? [decorations[String(value)]] : [];
   },
 
+  whiteSpace: (value) => {
+    const whiteSpaces: Record<string, string> = {
+      'normal': 'whitespace-normal',
+      'nowrap': 'whitespace-nowrap',
+      'pre': 'whitespace-pre',
+      'pre-line': 'whitespace-pre-line',
+      'pre-wrap': 'whitespace-pre-wrap',
+      'break-spaces': 'whitespace-break-spaces',
+    };
+    return whiteSpaces[String(value)] ? [whiteSpaces[String(value)]] : [];
+  },
+
+  textOverflow: (value) => {
+    const overflows: Record<string, string> = {
+      'clip': 'text-clip',
+      'ellipsis': 'text-ellipsis',
+    };
+    return overflows[String(value)] ? [overflows[String(value)]] : [];
+  },
+
   letterSpacing: (value) => {
     const spacings: Record<string, string> = {
       '-0.05em': 'tracking-tighter',
@@ -325,6 +346,40 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
     if (val <= 0.9) return ['opacity-90'];
     if (val <= 0.95) return ['opacity-95'];
     return ['opacity-100'];
+  },
+
+  boxShadow: (value) => {
+    const val = String(value).toLowerCase().trim();
+    
+    if (val === 'none' || val === '0') return ['shadow-none'];
+    
+    // Common shadow patterns
+    const shadows: Record<string, string> = {
+      '0 1px 2px 0 rgba(0, 0, 0, 0.05)': 'shadow-sm',
+      '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)': 'shadow',
+      '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)': 'shadow-md',
+      '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)': 'shadow-lg',
+      '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)': 'shadow-xl',
+      '0 25px 50px -12px rgba(0, 0, 0, 0.25)': 'shadow-2xl',
+    };
+    
+    // Check for exact matches first
+    if (shadows[val]) return [shadows[val]];
+    
+    // Simple shadow detection based on blur radius
+    const blurMatch = val.match(/(\d+)px.*rgba/);
+    if (blurMatch) {
+      const blurRadius = Number(blurMatch[1]);
+      if (blurRadius <= 2) return ['shadow-sm'];
+      if (blurRadius <= 4) return ['shadow'];
+      if (blurRadius <= 6) return ['shadow-md'];
+      if (blurRadius <= 15) return ['shadow-lg'];
+      if (blurRadius <= 25) return ['shadow-xl'];
+      return ['shadow-2xl'];
+    }
+    
+    // Fallback to arbitrary value for complex shadows
+    return [`shadow-[${value}]`];
   },
 
   // Backdrop filters
@@ -491,6 +546,74 @@ export const CSS_TO_TAILWIND_MAP: Record<string, (value: CSSValue) => string[]> 
     const val = String(value).toLowerCase();
     return timings[val] ? [timings[val]] : [`ease-[${value}]`];
   },
+
+  // Transform
+  transform: (value) => {
+    const val = String(value).toLowerCase().trim();
+    
+    if (val === 'none') return ['transform-none'];
+    
+    // Common transform functions
+    if (val.includes('rotate(')) {
+      const rotateMatch = val.match(/rotate\(([^)]+)\)/);
+      if (rotateMatch) {
+        const angle = rotateMatch[1];
+        if (angle === '0deg' || angle === '0') return ['rotate-0'];
+        if (angle === '45deg') return ['rotate-45'];
+        if (angle === '90deg') return ['rotate-90'];
+        if (angle === '180deg') return ['rotate-180'];
+        if (angle === '-45deg') return ['-rotate-45'];
+        if (angle === '-90deg') return ['-rotate-90'];
+        if (angle === '-180deg') return ['-rotate-180'];
+        return [`rotate-[${angle}]`];
+      }
+    }
+    
+    if (val.includes('scale(')) {
+      const scaleMatch = val.match(/scale\(([^)]+)\)/);
+      if (scaleMatch) {
+        const scale = scaleMatch[1];
+        if (scale === '0') return ['scale-0'];
+        if (scale === '0.5') return ['scale-50'];
+        if (scale === '0.75') return ['scale-75'];
+        if (scale === '0.9') return ['scale-90'];
+        if (scale === '0.95') return ['scale-95'];
+        if (scale === '1') return ['scale-100'];
+        if (scale === '1.05') return ['scale-105'];
+        if (scale === '1.1') return ['scale-110'];
+        if (scale === '1.25') return ['scale-125'];
+        if (scale === '1.5') return ['scale-150'];
+        return [`scale-[${scale}]`];
+      }
+    }
+    
+    if (val.includes('translate(')) {
+      // Handle translateX, translateY, translate
+      if (val.includes('translatex(')) {
+        const match = val.match(/translatex\(([^)]+)\)/i);
+        if (match) return [`translate-x-[${match[1]}]`];
+      }
+      if (val.includes('translatey(')) {
+        const match = val.match(/translatey\(([^)]+)\)/i);
+        if (match) return [`translate-y-[${match[1]}]`];
+      }
+      // Basic translate(x, y)
+      const translateMatch = val.match(/translate\(([^)]+)\)/);
+      if (translateMatch) {
+        const coords = translateMatch[1].split(',');
+        if (coords.length === 2) {
+          const x = coords[0].trim();
+          const y = coords[1].trim();
+          return [`translate-x-[${x}]`, `translate-y-[${y}]`];
+        } else if (coords.length === 1) {
+          return [`translate-x-[${coords[0].trim()}]`];
+        }
+      }
+    }
+    
+    // Fallback to arbitrary value for complex transforms
+    return [`transform-[${value}]`];
+  },
 };
 
 /**
@@ -637,6 +760,11 @@ function convertSize(value: CSSValue, prefix: string): string[] {
 function convertColor(value: CSSValue, prefix: string): string[] {
   const val = String(value);
   
+  // Handle 'none' for background - should map to transparent
+  if (val === 'none' && prefix === 'bg') {
+    return ['bg-transparent'];
+  }
+  
   // Common colors
   const commonColors: Record<string, string> = {
     '#ffffff': 'white',
@@ -647,6 +775,7 @@ function convertColor(value: CSSValue, prefix: string): string[] {
     'black': 'black',
     'transparent': 'transparent',
     'currentColor': 'current',
+    'none': 'transparent', // General fallback for 'none'
   };
 
   if (commonColors[val]) {
