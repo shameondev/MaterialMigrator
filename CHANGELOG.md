@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.2] - 2025-09-11
+
+### 🔧 **IMPROVED VALIDATION**
+Enhanced cross-file validation logic for safer migrations with complex style references.
+
+### Fixed
+- **Cross-File Validation**: Enhanced validation to properly handle imported styles with computed properties
+- **Computed Properties**: Added ObjectProperty traversal for `[classes.xxx]: condition` patterns
+- **Conservative Removal**: Fixed style removal to require both convertible classes AND no unconvertible properties
+- **Safety Improvements**: More robust validation prevents incorrect style deletions
+
+### Technical Changes
+- Added comprehensive ObjectProperty AST traversal for computed member expressions
+- Enhanced cross-file validation to search all style conversions systematically  
+- Improved safety by being more conservative about style removal decisions
+- Better handling of complex CSS patterns with pseudo-selectors and nested conditions
+
+### Known Issues
+- Some edge cases with imported styles may still be incorrectly removed in complex scenarios
+- Manual review recommended for migrations involving nested pseudo-selectors
+
+**NOTE**: This release improves migration safety but does not fully resolve all cross-file validation edge cases.
+
 ## [1.7.1] - 2025-09-11
 
 ### 🚨 **CRITICAL BUG FIX**
