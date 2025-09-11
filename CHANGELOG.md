@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2025-09-11
+
+### 🚨 **CRITICAL BUG FIX**
+**BREAKING ISSUE RESOLVED**: Fixed severe bug where migration tool would remove makeStyles but leave broken class references.
+
+### Fixed
+- **Critical Migration Safety**: Fixed broken code generation where `classes.xxx` references were left dangling after makeStyles removal
+- **Validation Enhancement**: Added comprehensive AST validation to ensure ALL class usages are convertible before removing makeStyles
+- **"All or Nothing" Migration**: Now safely keeps makeStyles intact when any class references can't be converted
+- **Object Expression Handling**: Improved conditional class object transformation to preserve complex pseudo-selectors
+
+### Added
+- **Missing CSS Properties**: 
+  - `background: 'none'` → `bg-transparent`
+  - `boxShadow: 'none'` → `shadow-none`
+  - `whiteSpace: 'nowrap'` → `whitespace-nowrap`
+  - `textOverflow: 'ellipsis'` → `text-ellipsis`
+  - `transform: 'none'` → `transform-none`
+- **Comprehensive Transform Support**: Full support for rotate, scale, translate functions
+- **Enhanced Shadow Mapping**: Common shadow patterns to proper Tailwind shadow classes
+- **Backdrop Filter Support**: Complete backdrop-filter CSS property mappings
+
+### Changed
+- **Migration Classification**: Enhanced logic to validate both style properties AND actual usage references
+- **Safety-First Approach**: Prevents broken code generation by keeping unconvertible classes intact
+- **Improved Error Handling**: Better detection and preservation of complex CSS patterns
+
+### Impact
+- **🔥 PRODUCTION SAFE**: No more broken runtime code from partial migrations
+- **Reliability**: Components remain functional during incomplete migrations  
+- **Developer Experience**: Clear feedback when manual intervention is needed
+- **Comprehensive Coverage**: Handles modern CSS properties and transform functions
+
+**UPGRADE RECOMMENDED**: This release fixes a critical issue that could break component functionality.
+
 ## [1.7.0] - 2025-09-10
 
 ### 🎯 **ENHANCED MIGRATION COVERAGE**
